@@ -3,10 +3,8 @@ import {
   Calendar,
   ChartBar,
   CheckSquare,
-  Fingerprint,
   Forklift,
   Gauge,
-  GraduationCap,
   Kanban,
   LayoutDashboard,
   ListTodo,
@@ -14,10 +12,7 @@ import {
   type LucideIcon,
   Mail,
   MessageSquare,
-  ReceiptText,
-  Server,
   ShoppingBag,
-  SquareArrowUpRight,
   Users,
 } from "lucide-react";
 
@@ -60,27 +55,24 @@ export interface NavGroup {
 }
 
 export const sidebarItems: NavGroup[] = [
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
   {
     id: 1,
-    label: "Dashboards",
+    label: "Dashboard",
     items: [
       {
-        id: "default",
-        title: "Default",
+        id: "overview",
+        title: "Overview",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
       {
-        id: "crm",
-        title: "CRM",
-        url: "/dashboard/crm",
-        icon: ChartBar,
-      },
-      {
-        id: "finance",
-        title: "Finance",
-        url: "/dashboard/finance",
-        icon: Banknote,
+        id: "ecommerce",
+        title: "Ecommerce",
+        url: "/dashboard/ecommerce",
+        icon: ShoppingBag,
       },
       {
         id: "analytics",
@@ -89,53 +81,87 @@ export const sidebarItems: NavGroup[] = [
         icon: Gauge,
       },
       {
-        id: "productivity",
-        title: "Productivity",
-        url: "/dashboard/productivity",
-        icon: ListTodo,
+        id: "finance",
+        title: "Finance",
+        url: "/dashboard/finance",
+        icon: Banknote,
       },
+    ],
+  },
+
+  // ==========================================================
+  // CATALOG
+  // ==========================================================
+  {
+    id: 2,
+    label: "Catalog",
+    items: [
       {
-        id: "ecommerce",
-        title: "E-commerce",
-        url: "/dashboard/ecommerce",
+        id: "catalog",
+        title: "Catalog",
         icon: ShoppingBag,
+        subItems: [
+          {
+            id: "products",
+            title: "Products",
+            url: "/dashboard/products",
+          },
+
+          // Future
+          // {
+          //   id: "categories",
+          //   title: "Categories",
+          //   url: "/dashboard/categories",
+          // },
+          // {
+          //   id: "brands",
+          //   title: "Brands",
+          //   url: "/dashboard/brands",
+          // },
+          // {
+          //   id: "inventory",
+          //   title: "Inventory",
+          //   url: "/dashboard/inventory",
+          // },
+        ],
+      },
+    ],
+  },
+
+  // ==========================================================
+  // CUSTOMERS
+  // ==========================================================
+  {
+    id: 3,
+    label: "Customers",
+    items: [
+      {
+        id: "users",
+        title: "Users",
+        url: "/dashboard/users",
+        icon: Users,
       },
       {
-        id: "academy",
-        title: "Academy",
-        url: "/dashboard/academy",
-        icon: GraduationCap,
+        id: "crm",
+        title: "CRM",
+        url: "/dashboard/crm",
+        icon: ChartBar,
       },
+    ],
+  },
+
+  // ==========================================================
+  // OPERATIONS
+  // ==========================================================
+  {
+    id: 4,
+    label: "Operations",
+    items: [
       {
         id: "logistics",
         title: "Logistics",
         url: "/dashboard/logistics",
         icon: Forklift,
-      },
-      {
-        id: "infrastructure",
-        title: "Infrastructure",
-        url: "/dashboard/infrastructure",
-        icon: Server,
-        badge: "new",
-      },
-    ],
-  },
-  {
-    id: 2,
-    label: "Pages",
-    items: [
-      {
-        id: "email",
-        title: "Email",
-        url: "/dashboard/mail",
-        icon: Mail,
-      },
-      {
-        id: "chat",
-        title: "Chat",
-        url: "/dashboard/chat",
-        icon: MessageSquare,
       },
       {
         id: "calendar",
@@ -157,63 +183,48 @@ export const sidebarItems: NavGroup[] = [
         badge: "new",
       },
       {
-        id: "invoice",
-        title: "Invoice",
-        url: "/dashboard/invoice",
-        icon: ReceiptText,
+        id: "productivity",
+        title: "Productivity",
+        url: "/dashboard/productivity",
+        icon: ListTodo,
+      },
+    ],
+  },
+
+  // ==========================================================
+  // COMMUNICATION
+  // ==========================================================
+  {
+    id: 5,
+    label: "Communication",
+    items: [
+      {
+        id: "mail",
+        title: "Mail",
+        url: "/dashboard/mail",
+        icon: Mail,
       },
       {
-        id: "users",
-        title: "Users",
-        url: "/dashboard/users",
-        icon: Users,
+        id: "chat",
+        title: "Chat",
+        url: "/dashboard/chat",
+        icon: MessageSquare,
       },
+    ],
+  },
+
+  // ==========================================================
+  // SYSTEM
+  // ==========================================================
+  {
+    id: 6,
+    label: "System",
+    items: [
       {
         id: "roles",
         title: "Roles",
         url: "/dashboard/roles",
         icon: Lock,
-      },
-      {
-        id: "authentication",
-        title: "Authentication",
-        icon: Fingerprint,
-        subItems: [
-          { id: "auth-login-v1", title: "Login v1", url: "/auth/v1/login", newTab: true },
-          { id: "auth-login-v2", title: "Login v2", url: "/auth/v2/login", newTab: true },
-          { id: "auth-register-v1", title: "Register v1", url: "/auth/v1/register", newTab: true },
-          { id: "auth-register-v2", title: "Register v2", url: "/auth/v2/register", newTab: true },
-        ],
-      },
-    ],
-  },
-  {
-    id: 3,
-    label: "Legacy",
-    items: [
-      {
-        id: "legacy-dashboards",
-        title: "Dashboards",
-        subItems: [
-          { id: "legacy-default", title: "Default V1", url: "/dashboard/default-v1" },
-          { id: "legacy-crm", title: "CRM V1", url: "/dashboard/crm-v1" },
-          { id: "legacy-finance", title: "Finance V1", url: "/dashboard/finance-v1" },
-          { id: "legacy-analytics", title: "Analytics V1", url: "/dashboard/analytics-v1" },
-        ],
-      },
-    ],
-  },
-  {
-    id: 4,
-    label: "Misc",
-    items: [
-      {
-        id: "others",
-        title: "Others",
-        url: "/dashboard/coming-soon",
-        icon: SquareArrowUpRight,
-        badge: "soon",
-        disabled: true,
       },
     ],
   },
