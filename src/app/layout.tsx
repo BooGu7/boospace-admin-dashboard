@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const { theme_mode, theme_preset, content_layout, navbar_style, sidebar_variant, sidebar_collapsible, font } =
     PREFERENCE_DEFAULTS;
+
   return (
     <html
       lang="en"
@@ -29,13 +30,15 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       data-sidebar-variant={sidebar_variant}
       data-sidebar-collapsible={sidebar_collapsible}
       data-font={font}
-      suppressHydrationWarning
+      suppressHydrationWarning // Đã có ở đây, giữ nguyên
     >
       <head>
-        {/* Applies theme and layout preferences on load to avoid flicker and unnecessary server rerenders. */}
         <ThemeBootScript />
       </head>
-      <body className={`${fontVars} min-h-screen antialiased`}>
+      <body
+        className={`${fontVars} min-h-screen antialiased`}
+        suppressHydrationWarning // THÊM DÒNG NÀY VÀO THẺ BODY
+      >
         <TooltipProvider>
           <PreferencesStoreProvider
             themeMode={theme_mode}

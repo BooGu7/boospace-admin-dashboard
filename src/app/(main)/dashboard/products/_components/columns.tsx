@@ -1,12 +1,9 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
-
-import { deleteProductAction } from "@/actions/product.actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,20 +11,23 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ProductWithRelations } from "@/types/product";
+import { DeleteProduct } from "./delete-product";
 
 export const columns: ColumnDef<ProductWithRelations>[] = [
+  // ... các cột khác (Ảnh, Tên, Giá, Danh mục) giữ nguyên ...
   {
     accessorKey: "images",
     header: "Ảnh",
     cell: ({ row }) => {
       const images = row.getValue("images") as string[];
-      const firstImage = images?.[0] || "/placeholder.png"; // Cần 1 ảnh placeholder trong public
+      const firstImage = images?.[0] || "https://placehold.co/400x400/png?text=No+Image";
       return (
         <div className="relative h-12 w-12 overflow-hidden rounded-md border">
-          <Image src={firstImage} alt="Product" fill className="object-cover" />
+          <Image src={firstImage} alt="Product" fill sizes="48px" className="object-cover" />
         </div>
       );
     },
@@ -42,16 +42,16 @@ export const columns: ColumnDef<ProductWithRelations>[] = [
     header: "Giá bán",
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("price") || "0");
-      const formatted = new Intl.NumberFormat("vi-VN", {
+      return new Intl.NumberFormat("vi-VN", {
         style: "currency",
         currency: "VND",
       }).format(price);
-      return <div className="font-medium">{formatted}</div>;
     },
   },
   {
-    accessorKey: "categories.name",
+    id: "category",
     header: "Danh mục",
+    accessorFn: (row) => row.categories?.name || "Chưa phân loại",
   },
   {
     accessorKey: "published",
@@ -66,15 +66,6 @@ export const columns: ColumnDef<ProductWithRelations>[] = [
     cell: ({ row }) => {
       const product = row.original;
 
-      const onDelete = async () => {
-        const confirm = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
-        if (confirm) {
-          const res = await deleteProductAction(product.id);
-          if (res.success) toast.success("Đã xóa sản phẩm");
-          else toast.error(res.error);
-        }
-      };
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -85,13 +76,26 @@ export const columns: ColumnDef<ProductWithRelations>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/products/edit/${product.id}`}>
+              <Link href={`/dashboard/products/edit/${product.id}`} className="flex items-center cursor-pointer">
                 <Pencil className="mr-2 h-4 w-4" /> Chỉnh sửa
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-red-600">
-              <Trash className="mr-2 h-4 w-4" /> Xóa sản phẩm
-            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* TRUYỀN MENU ITEM VÀO LÀM TRIGGER CHO DIALOG */}
+            <DeleteProduct
+              id={product.id}
+              trigger={
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()} // QUAN TRỌNG: Ngăn Menu đóng để Dialog hiện lên
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Xóa sản phẩm</span>
+                </DropdownMenuItem>
+              }
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       );

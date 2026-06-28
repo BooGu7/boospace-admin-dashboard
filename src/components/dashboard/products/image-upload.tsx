@@ -47,7 +47,13 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       <div className="grid grid-cols-3 gap-4">
         {value.map((url) => (
           <div key={url} className="relative aspect-square rounded-md overflow-hidden border">
-            <Image src={url} alt="Product image" fill className="object-cover" />
+            <Image
+              src={url}
+              alt="Product image"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Thêm dòng này
+              className="object-cover"
+            />
             <button
               type="button"
               onClick={() => removeImage(url)}
