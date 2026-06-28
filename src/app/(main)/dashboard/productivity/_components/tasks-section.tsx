@@ -16,11 +16,36 @@ type Task = {
 };
 
 const tasks: Task[] = [
-  { title: "Finalize Q2 roadmap", tag: "Work", time: "10:00 AM", checked: false },
-  { title: "Review design system updates", tag: "Design", time: "11:30 AM", checked: true },
-  { title: "Reply to important emails", tag: "Admin", time: "2:00 PM", checked: false },
-  { title: "Plan creator content for this week", tag: "Content", time: "4:30 PM", checked: false },
-  { title: "Prepare weekly team sync notes", tag: "Planning", time: "6:00 PM", checked: false },
+  {
+    title: "Finalize Q2 roadmap",
+    tag: "Work",
+    time: "10:00 AM",
+    checked: false,
+  },
+  {
+    title: "Review design system updates",
+    tag: "Design",
+    time: "11:30 AM",
+    checked: true,
+  },
+  {
+    title: "Reply to important emails",
+    tag: "Admin",
+    time: "2:00 PM",
+    checked: false,
+  },
+  {
+    title: "Plan creator content for this week",
+    tag: "Content",
+    time: "4:30 PM",
+    checked: false,
+  },
+  {
+    title: "Prepare weekly team sync notes",
+    tag: "Planning",
+    time: "6:00 PM",
+    checked: false,
+  },
 ];
 
 export function TasksSection() {

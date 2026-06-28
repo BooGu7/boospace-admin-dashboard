@@ -46,26 +46,85 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { id: "inbox", title: "Inbox", label: "24", icon: Inbox, isActive: true },
-  { id: "mentions", title: "Mentions", label: "3", icon: Mail, isActive: false },
+  {
+    id: "mentions",
+    title: "Mentions",
+    label: "3",
+    icon: Mail,
+    isActive: false,
+  },
   { id: "snoozed", title: "Snoozed", icon: Clock3, isActive: false },
   { id: "sent", title: "Sent", icon: Send, isActive: false },
-  { id: "all", title: "All conversations", icon: MessageCircle, isActive: false },
-  { id: "unassigned", title: "Unassigned", label: "7", icon: User, isActive: false },
+  {
+    id: "all",
+    title: "All conversations",
+    icon: MessageCircle,
+    isActive: false,
+  },
+  {
+    id: "unassigned",
+    title: "Unassigned",
+    label: "7",
+    icon: User,
+    isActive: false,
+  },
 ];
 
 export const channelItems: NavItem[] = [
   { id: "email", title: "Email", label: "18", icon: Mail, isActive: false },
-  { id: "chat", title: "Chat", label: "5", icon: MessageCircle, isActive: false },
-  { id: "whatsapp", title: "WhatsApp", label: "1", icon: Phone, isActive: false },
-  { id: "instagram", title: "Instagram", label: "0", icon: Phone, isActive: false },
-  { id: "facebook", title: "Facebook", label: "0", icon: Phone, isActive: false },
+  {
+    id: "chat",
+    title: "Chat",
+    label: "5",
+    icon: MessageCircle,
+    isActive: false,
+  },
+  {
+    id: "whatsapp",
+    title: "WhatsApp",
+    label: "1",
+    icon: Phone,
+    isActive: false,
+  },
+  {
+    id: "instagram",
+    title: "Instagram",
+    label: "0",
+    icon: Phone,
+    isActive: false,
+  },
+  {
+    id: "facebook",
+    title: "Facebook",
+    label: "0",
+    icon: Phone,
+    isActive: false,
+  },
   { id: "phone", title: "Phone", label: "0", icon: Phone, isActive: false },
 ];
 
 export const viewItems: NavItem[] = [
-  { id: "vip", title: "VIP Customers", label: "8", icon: Star, isActive: false },
-  { id: "orders", title: "Orders & Returns", label: "6", icon: Inbox, isActive: false },
-  { id: "feedback", title: "Product Feedback", label: "2", icon: MessageCircle, isActive: false },
+  {
+    id: "vip",
+    title: "VIP Customers",
+    label: "8",
+    icon: Star,
+    isActive: false,
+  },
+  {
+    id: "orders",
+    title: "Orders & Returns",
+    label: "6",
+    icon: Inbox,
+    isActive: false,
+  },
+  {
+    id: "feedback",
+    title: "Product Feedback",
+    label: "2",
+    icon: MessageCircle,
+    isActive: false,
+  },
 ];
 
 export const conversations: Conversation[] = [
@@ -118,7 +177,12 @@ export const conversations: Conversation[] = [
         text: "Found a mismatch in the staging environment variables. I'm applying the fix and will confirm once the probes recover.",
         time: "3 min ago",
       },
-      { id: 105, side: "in", text: "Great. Keep me posted, this is blocking our QA pass.", time: "1 min ago" },
+      {
+        id: 105,
+        side: "in",
+        text: "Great. Keep me posted, this is blocking our QA pass.",
+        time: "1 min ago",
+      },
     ],
   },
   {
@@ -169,7 +233,12 @@ export const conversations: Conversation[] = [
         text: "The duplicate was a retry from the old payment method. I've started the refund and sent the receipt to your billing email.",
         time: "2 min ago",
       },
-      { id: 205, side: "in", text: "Perfect, thanks. I'll let finance know to expect it.", time: "1 min ago" },
+      {
+        id: 205,
+        side: "in",
+        text: "Perfect, thanks. I'll let finance know to expect it.",
+        time: "1 min ago",
+      },
     ],
   },
   {
@@ -220,7 +289,12 @@ export const conversations: Conversation[] = [
         text: "Looks like the Analytics Viewer permission was dropped from your custom role. I've reattached it for your workspace.",
         time: "3 min ago",
       },
-      { id: 305, side: "in", text: "That fixed it. Thanks for the quick help.", time: "1 min ago" },
+      {
+        id: 305,
+        side: "in",
+        text: "That fixed it. Thanks for the quick help.",
+        time: "1 min ago",
+      },
     ],
   },
   // Today
@@ -272,7 +346,12 @@ export const conversations: Conversation[] = [
         text: "Got it. I'll send the executive summary, Scope 3 CSV, and the methodology note in one bundle.",
         time: "10:49 AM",
       },
-      { id: 505, side: "in", text: "Perfect. That should cover everything for Thursday.", time: "10:50 AM" },
+      {
+        id: 505,
+        side: "in",
+        text: "Perfect. That should cover everything for Thursday.",
+        time: "10:50 AM",
+      },
     ],
   },
   {

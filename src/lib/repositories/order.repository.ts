@@ -42,16 +42,7 @@ export const orderRepository = {
     // CHỖ QUAN TRỌNG NHẤT: Phải khởi tạo và await ngay trong hàm này
     const supabase = await createClient();
 
-    const {
-      search,
-      status,
-      payment,
-      shipping,
-      page = 1,
-      pageSize = 10,
-      sortBy,
-      sortOrder = "desc",
-    } = params;
+    const { search, status, payment, shipping, page = 1, pageSize = 10, sortBy, sortOrder = "desc" } = params;
 
     const safeSortBy = getSafeSortBy(sortBy);
 

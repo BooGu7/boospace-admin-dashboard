@@ -149,7 +149,10 @@ export function BalanceDistributionCard() {
                         x={viewBox.cx}
                         y={(viewBox.cy ?? 0) + 14}
                       >
-                        {formatCurrency(totalBalance, { currency, noDecimals: true })}
+                        {formatCurrency(totalBalance, {
+                          currency,
+                          noDecimals: true,
+                        })}
                       </tspan>
                     </text>
                   );

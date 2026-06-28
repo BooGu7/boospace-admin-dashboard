@@ -1,5 +1,7 @@
 node_modules/
 .next/
 dist/
+public/
 src/components/ui/
 src/components/calendar/
+src/styles/presets/

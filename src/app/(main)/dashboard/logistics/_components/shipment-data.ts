@@ -993,9 +993,39 @@ export const shipmentDetails = [
 ] as const;
 
 export const shipmentTimeline = [
-  { label: "Booked", time: "May 12, 07:20 AM", place: "Jakarta, IDN", done: true, active: false },
-  { label: "Packed", time: "May 12, 07:30 AM", place: "Cirebon, IDN", done: true, active: false },
-  { label: "Transit", time: "May 12, 09:15 AM", place: "Semarang, IDN", done: false, active: true },
-  { label: "Ground", time: "May 12, 12:10 PM", place: "Singapore, SGP", done: false, active: false },
-  { label: "Delivered", time: "-", place: "Singapore, SGP", done: false, active: false },
+  {
+    label: "Booked",
+    time: "May 12, 07:20 AM",
+    place: "Jakarta, IDN",
+    done: true,
+    active: false,
+  },
+  {
+    label: "Packed",
+    time: "May 12, 07:30 AM",
+    place: "Cirebon, IDN",
+    done: true,
+    active: false,
+  },
+  {
+    label: "Transit",
+    time: "May 12, 09:15 AM",
+    place: "Semarang, IDN",
+    done: false,
+    active: true,
+  },
+  {
+    label: "Ground",
+    time: "May 12, 12:10 PM",
+    place: "Singapore, SGP",
+    done: false,
+    active: false,
+  },
+  {
+    label: "Delivered",
+    time: "-",
+    place: "Singapore, SGP",
+    done: false,
+    active: false,
+  },
 ] as const;

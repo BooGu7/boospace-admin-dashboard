@@ -17,7 +17,10 @@ const pipelineChartConfig = {
 } satisfies ChartConfig;
 
 const axisMonthFormatter = new Intl.DateTimeFormat("en-US", { month: "short" });
-const tooltipMonthFormatter = new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" });
+const tooltipMonthFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "2-digit",
+});
 
 function getRollingMonthData(values: readonly number[]) {
   return values.map((qualified, index) => {

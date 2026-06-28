@@ -235,7 +235,7 @@ html {
 }
 
 .disable-transitions * {
-  transition: none !important;
+  transition: none;
 }
 
 [data-print-root] {
@@ -250,30 +250,30 @@ html {
 
   html,
   body {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    overflow: hidden;
   }
 
   body > *:not([data-print-root]) {
-    display: none !important;
+    display: none;
   }
 
   [data-print-root] {
-    display: block !important;
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-    background: white !important;
+    display: block;
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    overflow: hidden;
+    background: white;
   }
 
   [data-print-root] [data-print-paper] {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    box-shadow: none !important;
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
   }
 
   [data-print-root] [data-print-paper],

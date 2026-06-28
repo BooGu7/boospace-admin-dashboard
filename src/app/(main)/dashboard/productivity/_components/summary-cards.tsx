@@ -4,8 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const summaryCards = [
   { title: "Today", value: "4", description: "tasks scheduled", icon: Clock3 },
-  { title: "This Week", value: "68%", description: "progress", icon: TrendingUp },
-  { title: "Focus", value: "Deep Work", description: "2 hours remaining", icon: Focus },
+  {
+    title: "This Week",
+    value: "68%",
+    description: "progress",
+    icon: TrendingUp,
+  },
+  {
+    title: "Focus",
+    value: "Deep Work",
+    description: "2 hours remaining",
+    icon: Focus,
+  },
 ] as const;
 
 export function SummaryCards() {

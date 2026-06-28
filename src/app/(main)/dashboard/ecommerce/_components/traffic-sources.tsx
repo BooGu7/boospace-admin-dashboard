@@ -201,7 +201,10 @@ export function TrafficSources() {
             <XAxis dataKey="share" domain={[0, 100]} hide type="number" />
             <YAxis dataKey="name" hide type="category" />
             <Bar
-              background={{ fill: "url(#ecommerce-traffic-source-background-pattern)", radius: 8 }}
+              background={{
+                fill: "url(#ecommerce-traffic-source-background-pattern)",
+                radius: 8,
+              }}
               barSize={36}
               dataKey="share"
               fill="var(--color-share)"
