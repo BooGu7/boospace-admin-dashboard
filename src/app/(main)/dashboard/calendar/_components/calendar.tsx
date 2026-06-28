@@ -1,7 +1,5 @@
 "use client";
 
-import * as React from "react";
-
 import { useCalendarController } from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import interactionPlugin from "@fullcalendar/react/interaction";
@@ -10,6 +8,7 @@ import multiMonthPlugin from "@fullcalendar/react/multimonth";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import { differenceInCalendarDays, endOfMonth, format, startOfMonth } from "date-fns";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, XIcon } from "lucide-react";
+import * as React from "react";
 
 import { EventCalendarViews } from "@/components/calendar/event-calendar-views";
 import { Button } from "@/components/ui/button";

@@ -1,8 +1,7 @@
-import type { ReactNode } from "react";
-
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { siGithub } from "simple-icons";
 

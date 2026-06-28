@@ -1,8 +1,6 @@
 "use client";
 "use no memo";
 
-import * as React from "react";
-
 import {
   type ColumnFiltersState,
   flexRender,
@@ -16,6 +14,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import * as React from "react";
 
 import {
   Pagination,

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
 import { type GeoPermissibleObjects, geoMercator, geoPath } from "d3-geo";
+import { useEffect, useMemo, useState } from "react";
 import { feature, mesh } from "topojson-client";
 
 import type { GeoCoordinate, Shipment } from "./shipment-data";

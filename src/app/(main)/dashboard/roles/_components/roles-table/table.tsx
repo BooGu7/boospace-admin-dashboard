@@ -1,9 +1,8 @@
 "use client";
 "use no memo";
 
-import { useMemo } from "react";
-
 import { flexRender, type Table as TableType } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {

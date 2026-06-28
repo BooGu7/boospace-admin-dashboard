@@ -1,9 +1,8 @@
 "use client";
 "use no memo";
 
-import type { MouseEvent } from "react";
-
 import { flexRender, type Table as TableType } from "@tanstack/react-table";
+import type { MouseEvent } from "react";
 
 import {
   Pagination,

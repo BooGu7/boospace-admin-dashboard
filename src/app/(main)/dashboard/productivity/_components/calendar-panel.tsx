@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
-
 import { startOfMonth, startOfToday } from "date-fns";
 import { enGB } from "date-fns/locale";
+import * as React from "react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";

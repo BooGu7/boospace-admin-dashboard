@@ -1,11 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
-
 import { Trash2 } from "lucide-react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteProduct } from "@/actions/product.actions";
+import { deleteProductAction } from "@/actions/product.actions";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -16,15 +15,15 @@ export function DeleteProduct({ id }: Props) {
   const [pending, startTransition] = useTransition();
 
   function handleDelete() {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return;
 
     startTransition(async () => {
-      try {
-        await deleteProduct(id);
+      const result = await deleteProductAction(id);
 
-        toast.success("Deleted successfully");
-      } catch (_e) {
-        toast.error("Delete failed");
+      if (result.success) {
+        toast.success("Đã xóa sản phẩm thành công");
+      } else {
+        toast.error(result.error || "Xóa thất bại");
       }
     });
   }

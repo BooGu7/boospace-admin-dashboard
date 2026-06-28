@@ -1,3 +1,4 @@
+import { GeistPixelSquare } from "geist/font/pixel";
 import {
   DM_Sans,
   Figtree,
@@ -17,8 +18,6 @@ import {
   Roboto,
   Roboto_Slab,
 } from "next/font/google";
-
-import { GeistPixelSquare } from "geist/font/pixel";
 
 const inter = Inter({
   subsets: ["latin"],
