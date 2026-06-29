@@ -2,6 +2,7 @@
 
 import {
   getCoreRowModel,
+  type OnChangeFn, // Thêm type này
   type PaginationState,
   type RowSelectionState,
   useReactTable,
@@ -20,6 +21,7 @@ import { OrdersToolbar } from "./_components/toolbar";
 export function Orders() {
   const tableState = useOrdersTableState();
 
+  // 1. Lấy dữ liệu từ Hook (kết nối trực tiếp với URL qua tableState)
   const {
     data = [],
     count = 0,
@@ -32,15 +34,30 @@ export function Orders() {
     status: tableState.status,
   });
 
+  // 2. Local UI State
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
+  // 3. Khóa đối tượng pagination để tránh re-render vô tận
   const pagination: PaginationState = React.useMemo(
     () => ({
       pageIndex: tableState.page - 1,
       pageSize: tableState.pageSize,
     }),
     [tableState.page, tableState.pageSize],
+  );
+
+  // 4. Hàm xử lý khi người dùng thao tác phân trang trên giao diện
+  const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
+    (updater) => {
+      const nextState = typeof updater === "function" ? updater(pagination) : updater;
+      // Cập nhật lên URL thông qua hook tableState
+      tableState.setParams({
+        page: nextState.pageIndex + 1,
+        pageSize: nextState.pageSize,
+      });
+    },
+    [pagination, tableState],
   );
 
   const table = useReactTable({
@@ -53,6 +70,7 @@ export function Orders() {
     },
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: handlePaginationChange, // QUAN TRỌNG: Thêm dòng này để nhận diện chuyển trang
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(count / tableState.pageSize),
@@ -63,8 +81,13 @@ export function Orders() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Danh sách đơn hàng</h1>
       </div>
+      {/* Truyền tableState vào để Toolbar có thể setParams (tìm kiếm/lọc) */}
       <OrdersToolbar table={table} state={tableState} />
+
+      {/* Hiển thị bảng kèm trạng thái loading */}
       <OrdersTable table={table} loading={loading} error={error} />
+
+      {/* Hiển thị phân trang */}
       <OrdersPagination table={table} />
     </div>
   );

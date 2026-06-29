@@ -1,38 +1,67 @@
 "use server";
 
-import { orderService } from "@/lib/services/order.service";
-import type { GetOrdersParams } from "@/types/order"; // Import từ types
+import { revalidatePath } from "next/cache";
+import { getOrdersService } from "@/lib/services/order.service";
+import { createClient } from "@/lib/supabase/server";
+import type { GetOrdersParams } from "@/types/order";
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 10;
+// 1. Định nghĩa kiểu trả về đồng nhất để tránh lỗi Type ở Hook
+export type GetOrdersResponse = {
+  success: boolean;
+  data: any[];
+  meta: { page: number; pageSize: number; total: number };
+  error?: string;
+};
 
-export async function getOrders(params: GetOrdersParams) {
+/**
+ * ACTION LẤY DANH SÁCH ĐƠN HÀNG
+ */
+export async function getOrders(params: GetOrdersParams): Promise<GetOrdersResponse> {
   try {
-    const normalizedParams: GetOrdersParams = {
-      search: params.search?.trim() ?? undefined,
-      status: params.status ?? undefined,
-      payment: params.payment ?? undefined,
-      shipping: params.shipping ?? undefined,
-      page: params.page && params.page > 0 ? params.page : DEFAULT_PAGE,
-      pageSize: params.pageSize && params.pageSize > 0 ? params.pageSize : DEFAULT_PAGE_SIZE,
-      sortBy: params.sortBy ?? "createdAt",
-      sortOrder: params.sortOrder ?? "desc",
-    };
-
-    const result = await orderService.getOrders(normalizedParams);
-
+    const result = await getOrdersService(params);
     return {
       success: true,
       data: result.data,
       meta: result.meta,
+      error: undefined,
     };
   } catch (error) {
-    console.error("[GET_ORDERS_ERROR]", error);
+    console.error("[GET_ORDERS_ACTION_ERROR]", error);
     return {
       success: false,
       data: [],
-      meta: { page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE, total: 0 },
+      meta: {
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 10,
+        total: 0,
+      },
       error: error instanceof Error ? error.message : "Failed to fetch orders",
+    };
+  }
+}
+
+/**
+ * ACTION CẬP NHẬT TRẠNG THÁI (HÀM ĐANG BỊ BÁO THIẾU)
+ */
+export async function updateOrderStatusAction(id: string, status: string) {
+  try {
+    const supabase = await createClient();
+
+    // Cập nhật vào cột order_status (snake_case trong DB)
+    const { error } = await supabase.from("orders").update({ order_status: status }).eq("id", id);
+
+    if (error) throw error;
+
+    // Làm mới dữ liệu tại trang chi tiết và trang danh sách
+    revalidatePath(`/dashboard/orders/${id}`);
+    revalidatePath("/dashboard/orders");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("[UPDATE_ORDER_STATUS_ERROR]", error);
+    return {
+      success: false,
+      error: error.message || "Không thể cập nhật trạng thái",
     };
   }
 }

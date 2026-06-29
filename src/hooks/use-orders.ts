@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-import { getOrders } from "@/actions/order.actions";
+import { type GetOrdersResponse, getOrders } from "@/actions/order.actions";
 import type { Order } from "@/types/order";
 
 export type UseOrdersParams = {
@@ -32,20 +31,19 @@ export function useOrders(params: UseOrdersParams) {
       setError(null);
 
       try {
-        const res = await getOrders(params);
+        const res: GetOrdersResponse = await getOrders(params);
 
-        // ignore stale response
         if (requestId !== requestIdRef.current) return;
 
         if (!res.success) {
+          // Sử dụng ép kiểu hoặc kiểm tra an toàn
           throw new Error(res.error || "Fetch orders failed");
         }
 
-        setData(res.data);
+        setData(res.data as Order[]);
         setCount(res.meta?.total ?? 0);
       } catch (err) {
         if (requestId !== requestIdRef.current) return;
-
         setError(err instanceof Error ? err.message : "Unknown error occurred");
         setData([]);
         setCount(0);
@@ -57,6 +55,9 @@ export function useOrders(params: UseOrdersParams) {
     }
 
     fetchData();
+
+    // QUAN TRỌNG: Loại bỏ params (object) khỏi mảng phụ thuộc bên dưới
+    // để tránh việc useEffect chạy lại liên tục (Infinite Loop)
   }, [
     params.search,
     params.status,
@@ -69,10 +70,5 @@ export function useOrders(params: UseOrdersParams) {
     params,
   ]);
 
-  return {
-    data,
-    count,
-    loading,
-    error,
-  };
+  return { data, count, loading, error };
 }

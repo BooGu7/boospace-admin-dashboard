@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import Link from "next/link"; // ĐÃ THÊM IMPORT NÀY
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,11 @@ export const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "code",
     header: "Mã đơn hàng",
+    cell: ({ row }) => (
+      <Link href={`/dashboard/orders/${row.original.id}`} className="font-bold text-primary hover:underline">
+        #{row.original.code}
+      </Link>
+    ),
   },
   {
     accessorKey: "customerName",
@@ -81,7 +87,7 @@ export const columns: ColumnDef<Order>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const _order = row.original;
+      const order = row.original; // ĐỔI TÊN TỪ _order THÀNH order
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -90,12 +96,17 @@ export const columns: ColumnDef<Order>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
+            {/* LINK TRỎ VỀ TRANG CHI TIẾT ĐƠN HÀNG */}
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/orders/${order.id}`}>
+                <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
+              </Link>
             </DropdownMenuItem>
+
             <DropdownMenuItem>
               <Pencil className="mr-2 h-4 w-4" /> Chỉnh sửa
             </DropdownMenuItem>
+
             <DropdownMenuItem className="text-red-600">
               <Trash className="mr-2 h-4 w-4" /> Xóa
             </DropdownMenuItem>

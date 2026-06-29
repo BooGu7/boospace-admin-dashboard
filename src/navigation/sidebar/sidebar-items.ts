@@ -12,6 +12,8 @@ import {
   type LucideIcon,
   Mail,
   MessageSquare,
+  Package, // Đã thêm icon này
+  ReceiptText, // Đã thêm icon này
   ShoppingBag,
   Users,
 } from "lucide-react";
@@ -90,39 +92,49 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // CATALOG
+  // SALES (MỤC MỚI THÊM VÀO ĐÂY)
   // ==========================================================
   {
     id: 2,
+    label: "Sales",
+    items: [
+      {
+        id: "orders",
+        title: "Orders",
+        url: "/dashboard/orders",
+        icon: ReceiptText, // Icon hóa đơn
+        badge: "new",
+      },
+    ],
+  },
+
+  // ==========================================================
+  // CATALOG
+  // ==========================================================
+  {
+    id: 3,
     label: "Catalog",
     items: [
       {
         id: "catalog",
         title: "Catalog",
-        icon: ShoppingBag,
+        icon: Package,
         subItems: [
           {
             id: "products",
             title: "Products",
             url: "/dashboard/products",
           },
-
-          // Future
-          // {
-          //   id: "categories",
-          //   title: "Categories",
-          //   url: "/dashboard/categories",
-          // },
-          // {
-          //   id: "brands",
-          //   title: "Brands",
-          //   url: "/dashboard/brands",
-          // },
-          // {
-          //   id: "inventory",
-          //   title: "Inventory",
-          //   url: "/dashboard/inventory",
-          // },
+          {
+            id: "categories",
+            title: "Categories",
+            url: "/dashboard/categories",
+          },
+          {
+            id: "brands",
+            title: "Brands",
+            url: "/dashboard/brands",
+          },
         ],
       },
     ],
@@ -132,7 +144,7 @@ export const sidebarItems: NavGroup[] = [
   // CUSTOMERS
   // ==========================================================
   {
-    id: 3,
+    id: 4,
     label: "Customers",
     items: [
       {
@@ -154,7 +166,7 @@ export const sidebarItems: NavGroup[] = [
   // OPERATIONS
   // ==========================================================
   {
-    id: 4,
+    id: 5,
     label: "Operations",
     items: [
       {
@@ -195,7 +207,7 @@ export const sidebarItems: NavGroup[] = [
   // COMMUNICATION
   // ==========================================================
   {
-    id: 5,
+    id: 6,
     label: "Communication",
     items: [
       {
@@ -217,7 +229,7 @@ export const sidebarItems: NavGroup[] = [
   // SYSTEM
   // ==========================================================
   {
-    id: 6,
+    id: 7,
     label: "System",
     items: [
       {
