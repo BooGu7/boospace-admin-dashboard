@@ -1,8 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react";
-import Link from "next/link"; // ĐÃ THÊM IMPORT NÀY
+import { Eye, MoreHorizontal, Pencil } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Order } from "@/types/order";
-
+import { DeleteOrder } from "./delete-order";
 import { SelectAllCheckbox } from "./select-all-checkbox";
 
 const formatCurrency = (value: number) =>
@@ -32,7 +33,7 @@ const statusMap: Record<
   Pending: { label: "Chờ xử lý", variant: "outline" },
   Confirmed: { label: "Đã xác nhận", variant: "secondary" },
   Shipping: { label: "Đang giao", variant: "default" },
-  Delivered: { label: "Đã giao", variant: "default" },
+  Delivered: { label: "Đã hoàn thành", variant: "default" },
   Cancelled: { label: "Đã hủy", variant: "destructive" },
 };
 
@@ -54,7 +55,7 @@ export const columns: ColumnDef<Order>[] = [
     accessorKey: "code",
     header: "Mã đơn hàng",
     cell: ({ row }) => (
-      <Link href={`/dashboard/orders/${row.original.id}`} className="font-bold text-primary hover:underline">
+      <Link href={`/dashboard/orders/${row.original.id}`} className="font-bold text-blue-600 hover:underline">
         #{row.original.code}
       </Link>
     ),
@@ -86,8 +87,12 @@ export const columns: ColumnDef<Order>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const order = row.original; // ĐỔI TÊN TỪ _order THÀNH order
+    cell: ({ row, table }) => {
+      const order = row.original;
+
+      // Lấy hàm làm mới từ cấu hình table meta
+      const refresh = (table.options.meta as any)?.refreshOrders;
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -96,19 +101,19 @@ export const columns: ColumnDef<Order>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {/* LINK TRỎ VỀ TRANG CHI TIẾT ĐƠN HÀNG */}
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/orders/${order.id}`}>
+              <Link href={`/dashboard/orders/${order.id}`} className="cursor-pointer">
                 <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
               </Link>
             </DropdownMenuItem>
-
-            <DropdownMenuItem>
-              <Pencil className="mr-2 h-4 w-4" /> Chỉnh sửa
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/orders/${order.id}`} className="cursor-pointer">
+                <Pencil className="mr-2 h-4 w-4" /> Chỉnh sửa
+              </Link>
             </DropdownMenuItem>
-
-            <DropdownMenuItem className="text-red-600">
-              <Trash className="mr-2 h-4 w-4" /> Xóa
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <DeleteOrder id={order.id} onSuccess={refresh} />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

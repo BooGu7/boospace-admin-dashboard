@@ -21,7 +21,14 @@ export function useOrders(params: UseOrdersParams) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Bộ kích hoạt làm mới danh sách
+  const [_refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refresh = () => setRefreshTrigger((prev) => prev + 1);
+
   const requestIdRef = useRef(0);
+
+  const { search, status, payment, shipping, page, pageSize, sortBy, sortOrder } = params;
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
@@ -31,12 +38,20 @@ export function useOrders(params: UseOrdersParams) {
       setError(null);
 
       try {
-        const res: GetOrdersResponse = await getOrders(params);
+        const res: GetOrdersResponse = await getOrders({
+          search,
+          status,
+          payment,
+          shipping,
+          page,
+          pageSize,
+          sortBy,
+          sortOrder,
+        });
 
         if (requestId !== requestIdRef.current) return;
 
         if (!res.success) {
-          // Sử dụng ép kiểu hoặc kiểm tra an toàn
           throw new Error(res.error || "Fetch orders failed");
         }
 
@@ -55,20 +70,7 @@ export function useOrders(params: UseOrdersParams) {
     }
 
     fetchData();
+  }, [search, status, payment, shipping, page, pageSize, sortBy, sortOrder]);
 
-    // QUAN TRỌNG: Loại bỏ params (object) khỏi mảng phụ thuộc bên dưới
-    // để tránh việc useEffect chạy lại liên tục (Infinite Loop)
-  }, [
-    params.search,
-    params.status,
-    params.payment,
-    params.shipping,
-    params.page,
-    params.pageSize,
-    params.sortBy,
-    params.sortOrder,
-    params,
-  ]);
-
-  return { data, count, loading, error };
+  return { data, count, loading, error, refresh };
 }

@@ -5,7 +5,7 @@ import { getOrdersService } from "@/lib/services/order.service";
 import { createClient } from "@/lib/supabase/server";
 import type { GetOrdersParams } from "@/types/order";
 
-// 1. Định nghĩa kiểu trả về đồng nhất để tránh lỗi Type ở Hook
+// Định nghĩa kiểu trả về đồng nhất để tránh lỗi Type ở Hook
 export type GetOrdersResponse = {
   success: boolean;
   data: any[];
@@ -14,7 +14,7 @@ export type GetOrdersResponse = {
 };
 
 /**
- * ACTION LẤY DANH SÁCH ĐƠN HÀNG
+ * ACTION LẤY DANH SÁCH ĐƠN HÀNG (Gọi từ bảng dữ liệu)
  */
 export async function getOrders(params: GetOrdersParams): Promise<GetOrdersResponse> {
   try {
@@ -41,18 +41,15 @@ export async function getOrders(params: GetOrdersParams): Promise<GetOrdersRespo
 }
 
 /**
- * ACTION CẬP NHẬT TRẠNG THÁI (HÀM ĐANG BỊ BÁO THIẾU)
+ * ACTION CẬP NHẬT TRẠNG THÁI (Gọi từ trang Chi tiết)
  */
 export async function updateOrderStatusAction(id: string, status: string) {
   try {
     const supabase = await createClient();
-
-    // Cập nhật vào cột order_status (snake_case trong DB)
     const { error } = await supabase.from("orders").update({ order_status: status }).eq("id", id);
 
     if (error) throw error;
 
-    // Làm mới dữ liệu tại trang chi tiết và trang danh sách
     revalidatePath(`/dashboard/orders/${id}`);
     revalidatePath("/dashboard/orders");
 
@@ -63,5 +60,21 @@ export async function updateOrderStatusAction(id: string, status: string) {
       success: false,
       error: error.message || "Không thể cập nhật trạng thái",
     };
+  }
+}
+
+/**
+ * ACTION XÓA ĐƠN HÀNG (Gọi từ nút Xóa)
+ */
+export async function deleteOrderAction(id: string) {
+  try {
+    const { deleteOrder } = await import("@/lib/repositories/order.repository");
+    await deleteOrder(id);
+
+    revalidatePath("/dashboard/orders");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[DELETE_ORDER_ACTION_ERROR]", error);
+    return { success: false, error: error.message || "Không thể xóa đơn hàng" };
   }
 }

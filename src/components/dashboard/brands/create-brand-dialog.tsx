@@ -3,7 +3,7 @@
 import { Loader2, Plus } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { createCategoryAction } from "@/actions/category.actions";
+import { createBrandAction } from "@/actions/brand.actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,26 +17,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function CreateCategoryDialog() {
+export function CreateBrandDialog() {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
-  // Sửa kiểu trả về thành Promise<void>
-  async function handleSubmit(formData: FormData): Promise<void> {
+  async function handleSubmit(formData: FormData) {
     const name = formData.get("name") as string;
-
-    if (!name) {
-      toast.error("Vui lòng nhập tên danh mục");
-      return; // Chỉ return để thoát hàm, không trả về giá trị của toast
-    }
+    const logoUrl = formData.get("logoUrl") as string;
 
     startTransition(async () => {
-      const res = await createCategoryAction(name);
+      const res = await createBrandAction(name, logoUrl);
       if (res.success) {
-        toast.success("Đã thêm danh mục mới");
+        toast.success("Đã thêm thương hiệu thành công");
         setOpen(false);
       } else {
-        toast.error(res.error || "Có lỗi xảy ra");
+        toast.error(res.error);
       }
     });
   }
@@ -45,32 +40,29 @@ export function CreateCategoryDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm">
-          <Plus className="mr-2 h-4 w-4" /> Thêm danh mục
+          <Plus className="mr-2 h-4 w-4" /> Thêm Brand
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        {/* Form action bây giờ đã nhận hàm trả về Promise<void> chuẩn xác */}
+      <DialogContent>
         <form action={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Tạo danh mục mới</DialogTitle>
-            <DialogDescription>Nhập tên loại sản phẩm 3D/DIY bạn muốn phân loại.</DialogDescription>
+            <DialogTitle>Thêm thương hiệu mới</DialogTitle>
+            <DialogDescription>Nhập thông tin hãng sản xuất sản phẩm 3D/DIY.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Tên danh mục</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="Ví dụ: Mô hình nhân vật, Phụ kiện..."
-                required
-                disabled={isPending}
-              />
+              <Label>Tên thương hiệu</Label>
+              <Input name="name" placeholder="Ví dụ: Creality, Prusa, Boo Studio..." required />
+            </div>
+            <div className="grid gap-2">
+              <Label>URL Logo (Tùy chọn)</Label>
+              <Input name="logoUrl" placeholder="https://..." />
             </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isPending ? "Đang lưu..." : "Lưu danh mục"}
+              Lưu thương hiệu
             </Button>
           </DialogFooter>
         </form>

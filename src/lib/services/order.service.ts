@@ -1,6 +1,9 @@
 import { getOrders } from "@/lib/repositories/order.repository";
 import type { GetOrdersParams } from "@/types/order";
 
+/**
+ * SERVICE XỬ LÝ LOGIC LẤY DANH SÁCH
+ */
 export async function getOrdersService(params: GetOrdersParams) {
   const result = await getOrders(params);
 

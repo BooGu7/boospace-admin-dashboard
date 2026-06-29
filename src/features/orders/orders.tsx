@@ -2,7 +2,7 @@
 
 import {
   getCoreRowModel,
-  type OnChangeFn, // Thêm type này
+  type OnChangeFn,
   type PaginationState,
   type RowSelectionState,
   useReactTable,
@@ -21,12 +21,12 @@ import { OrdersToolbar } from "./_components/toolbar";
 export function Orders() {
   const tableState = useOrdersTableState();
 
-  // 1. Lấy dữ liệu từ Hook (kết nối trực tiếp với URL qua tableState)
   const {
     data = [],
     count = 0,
     loading,
     error,
+    refresh, // Nhận hàm làm mới từ hook
   } = useOrders({
     page: tableState.page,
     pageSize: tableState.pageSize,
@@ -34,24 +34,20 @@ export function Orders() {
     status: tableState.status,
   });
 
-  // 2. Local UI State
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
-  // 3. Khóa đối tượng pagination để tránh re-render vô tận
   const pagination: PaginationState = React.useMemo(
     () => ({
       pageIndex: tableState.page - 1,
-      pageSize: tableState.pageSize,
+      pageSize: tableState.pageSize || 10,
     }),
     [tableState.page, tableState.pageSize],
   );
 
-  // 4. Hàm xử lý khi người dùng thao tác phân trang trên giao diện
   const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
     (updater) => {
       const nextState = typeof updater === "function" ? updater(pagination) : updater;
-      // Cập nhật lên URL thông qua hook tableState
       tableState.setParams({
         page: nextState.pageIndex + 1,
         pageSize: nextState.pageSize,
@@ -68,26 +64,36 @@ export function Orders() {
       columnVisibility,
       pagination,
     },
+
+    // GẮN HÀM REFRESH VÀO META ĐỂ CỘT ACTION CÓ THỂ GỌI ĐƯỢC
+    meta: {
+      refreshOrders: refresh,
+    },
+
+    getRowId: (row) => row.id,
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: handlePaginationChange, // QUAN TRỌNG: Thêm dòng này để nhận diện chuyển trang
+    onPaginationChange: handlePaginationChange,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    pageCount: Math.ceil(count / tableState.pageSize),
+    pageCount: Math.max(Math.ceil(count / (tableState.pageSize || 10)), 1),
   });
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Danh sách đơn hàng</h1>
+    <div className="space-y-4 p-4 bg-card rounded-xl border border-slate-100 shadow-sm">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <h1 className="text-2xl font-bold">Danh sách đơn hàng</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tổng số đơn hàng thực tế trên hệ thống: <strong className="text-primary">{count}</strong>
+          </p>
+        </div>
       </div>
-      {/* Truyền tableState vào để Toolbar có thể setParams (tìm kiếm/lọc) */}
       <OrdersToolbar table={table} state={tableState} />
-
-      {/* Hiển thị bảng kèm trạng thái loading */}
       <OrdersTable table={table} loading={loading} error={error} />
-
-      {/* Hiển thị phân trang */}
       <OrdersPagination table={table} />
     </div>
   );
