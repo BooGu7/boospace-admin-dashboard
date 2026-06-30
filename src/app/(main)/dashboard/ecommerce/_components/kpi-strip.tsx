@@ -1,101 +1,40 @@
 "use client";
 
-import { format, parse } from "date-fns";
 import { ArrowUpRight, DollarSign, PackageCheck, ReceiptText, RotateCcw, ShoppingBag, Users } from "lucide-react";
 import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
-
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-const revenueBucketRanges = ["01-05", "06-10", "11-15", "16-20", "21-25", "26-31"] as const;
-const profitMultipliers = [0.24, 0.28, 0.26] as const;
-
-const revenueBucketValues = [
-  [4820, 5150, 5060, 5520, 5990, 6880],
-  [5140, 5360, 5520, 5860, 6120, 6720],
-  [4920, 4680, 5150, 5360, 5720, 6150],
-  [5480, 5920, 5660, 6180, 6340, 6660],
-  [5840, 6220, 6480, 6110, 6680, 7230],
-  [6280, 6740, 6960, 7120, 6780, 7240],
-  [6820, 7240, 7680, 7410, 7920, 7810],
-  [6040, 6420, 6150, 6860, 7080, 7090],
-  [5860, 6120, 6340, 6080, 6620, 6900],
-  [6520, 6840, 7060, 7420, 7160, 8280],
-  [6980, 7320, 7640, 7160, 8040, 8620],
-  [6900, 7400, 8100, 8600, 8200, 9360],
-] as const;
-
-const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short" });
-
-function getRollingRevenueBuckets() {
-  const currentMonth = new Date();
-  currentMonth.setDate(1);
-
-  return revenueBucketValues.map((values, index) => {
-    const monthDate = new Date(currentMonth);
-    monthDate.setMonth(currentMonth.getMonth() - (revenueBucketValues.length - 1 - index));
-
-    return {
-      month: `${monthFormatter.format(monthDate)} ${String(monthDate.getFullYear()).slice(-2)}`,
-      values,
-    };
-  });
-}
-
-const revenueOverviewData = getRollingRevenueBuckets().flatMap(({ month, values }) =>
-  values.map((revenue, index) => ({
-    period: `${month} ${revenueBucketRanges[index]}`,
-    profit: Math.round(revenue * profitMultipliers[index % profitMultipliers.length]),
-    revenue,
-  })),
-);
-
 const revenueOverviewConfig = {
   revenue: {
-    label: "Revenue",
+    label: "Doanh thu",
     color: "var(--foreground)",
   },
   profit: {
-    label: "Profit",
+    label: "Lợi nhuận ròng",
     color: "var(--muted-foreground)",
   },
 } satisfies ChartConfig;
 
-function formatMonthTick(value: string) {
-  const parts = value.split(" ");
-  const range = parts.at(-1);
-  const month = parts.slice(0, -1).join(" ");
+export function KpiStrip({ stats }: { stats: any }) {
+  const formatVND = (val: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(val);
 
-  return range === "11-15" ? month : "";
-}
-
-function formatTooltipLabel(value: string) {
-  const parts = value.split(" ");
-  const range = parts.at(-1);
-  const month = parse(parts.slice(0, -1).join(" "), "MMM yy", new Date());
-  const [start, end] = String(range).split("-");
-  const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const startDate = new Date(month.getFullYear(), month.getMonth(), Number(start));
-  const endDate = new Date(month.getFullYear(), month.getMonth(), Math.min(Number(end), lastDayOfMonth));
-
-  return `${format(month, "MMM")} ${format(startDate, "do")} - ${format(endDate, "do")}, ${format(month, "yyyy")}`;
-}
-
-function formatCurrencyTooltipValue(value: unknown) {
-  return typeof value === "number" ? `$${value.toLocaleString()}` : String(value ?? "");
-}
-
-export function KpiStrip() {
   return (
     <div className="h-full overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 xl:col-span-12">
       <div>
         <div className="grid grid-cols-1 xl:grid-cols-12">
           <div className="grid grid-cols-1 md:grid-cols-2 md:grid-rows-3 xl:col-span-5 xl:border-r">
+            {/* THẺ DOANH THU THẬT */}
             <Card className="h-full rounded-none border-0 border-border border-b ring-0 md:border-r">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Total Sales</CardTitle>
-                <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  $48,560.00
+                <CardTitle className="font-normal text-sm">Doanh thu bán hàng</CardTitle>
+                <CardDescription className="text-xl font-bold text-foreground tabular-nums leading-none tracking-tight">
+                  {formatVND(stats.totalRevenue)}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <DollarSign className="size-3 text-foreground" />
@@ -103,17 +42,18 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-green-700 dark:text-green-300">+15.8%</span>
-                  <span className="text-muted-foreground"> vs last week</span>
+                  <span className="text-green-700 dark:text-green-300">Live</span>
+                  <span className="text-muted-foreground"> đồng bộ Supabase</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* THẺ TỔNG ĐƠN HÀNG THẬT */}
             <Card className="h-full rounded-none border-0 border-border border-b ring-0">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Total Orders</CardTitle>
+                <CardTitle className="font-normal text-sm">Tổng đơn hàng</CardTitle>
                 <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  379
+                  {stats.totalOrders}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <ShoppingBag className="size-3 text-foreground" />
@@ -121,17 +61,17 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-green-700 dark:text-green-300">+8.3%</span>
-                  <span className="text-muted-foreground"> vs last week</span>
+                  <span className="text-green-700 dark:text-green-300">Hoạt động</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* THẺ KHÁCH HÀNG THẬT */}
             <Card className="h-full rounded-none border-0 border-border border-b ring-0 md:border-r">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Customer Growth</CardTitle>
+                <CardTitle className="font-normal text-sm">Khách hàng đăng ký</CardTitle>
                 <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  820
+                  {stats.customerGrowth}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <Users className="size-3 text-foreground" />
@@ -139,17 +79,17 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-green-700 dark:text-green-300">+12.5%</span>
-                  <span className="text-muted-foreground"> vs last month</span>
+                  <span className="text-green-700 dark:text-green-300"> profiles</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* THẺ ĐƠN HÀNG TRUNG BÌNH THẬT */}
             <Card className="h-full rounded-none border-0 border-border border-b ring-0">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Average Order</CardTitle>
-                <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  $128
+                <CardTitle className="font-normal text-sm">Giá trị đơn trung bình (AOV)</CardTitle>
+                <CardDescription className="text-xl font-bold text-foreground tabular-nums leading-none tracking-tight">
+                  {formatVND(stats.averageOrder)}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <ReceiptText className="size-3 text-foreground" />
@@ -157,17 +97,17 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-destructive">-$4.20</span>
-                  <span className="text-muted-foreground"> vs last week</span>
+                  <span className="text-muted-foreground">Sức mua trung bình</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* THẺ ĐƠN HỦY THẬT */}
             <Card className="h-full rounded-none border-0 border-border border-b ring-0 md:border-r md:border-b-0">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Return Requests</CardTitle>
-                <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  18
+                <CardTitle className="font-normal text-sm">Đơn hàng đã hủy</CardTitle>
+                <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight text-red-600">
+                  {stats.cancelledOrders}
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <RotateCcw className="size-3 text-foreground" />
@@ -175,17 +115,17 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-destructive">+0.6%</span>
-                  <span className="text-muted-foreground"> vs last month</span>
+                  <span className="text-muted-foreground">Đơn bị huỷ bỏ</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* THẺ CHÍNH XÁC KHO */}
             <Card className="h-full rounded-none border-0 ring-0">
               <CardHeader>
-                <CardTitle className="font-normal text-sm">Stock Accuracy</CardTitle>
+                <CardTitle className="font-normal text-sm">Độ chính xác kho</CardTitle>
                 <CardDescription className="text-3xl text-foreground tabular-nums leading-none tracking-tight">
-                  97%
+                  {stats.stockAccuracy}%
                 </CardDescription>
                 <CardAction className="grid size-6 place-items-center rounded-sm bg-muted">
                   <PackageCheck className="size-3 text-foreground" />
@@ -193,16 +133,16 @@ export function KpiStrip() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm">
-                  <span className="text-green-700 dark:text-green-300">+2.4 pts</span>
-                  <span className="text-muted-foreground"> vs last audit</span>
+                  <span className="text-green-700 dark:text-green-300">An toàn</span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
+          {/* BIỂU ĐỒ DOANH SỐ THẬT */}
           <Card className="h-full rounded-none border-0 ring-0 xl:col-span-7">
             <CardHeader>
-              <CardTitle className="font-normal">Sales Overview</CardTitle>
+              <CardTitle className="font-normal">Tổng quan bán hàng (7 ngày)</CardTitle>
               <CardAction>
                 <ArrowUpRight className="size-4" />
               </CardAction>
@@ -212,7 +152,7 @@ export function KpiStrip() {
               <ChartContainer config={revenueOverviewConfig} className="h-74 w-full">
                 <ComposedChart
                   accessibilityLayer
-                  data={revenueOverviewData}
+                  data={stats.chartData}
                   margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
                 >
                   <defs>
@@ -227,46 +167,27 @@ export function KpiStrip() {
                     </filter>
                   </defs>
                   <CartesianGrid yAxisId="profit" vertical={false} />
-                  <XAxis
-                    dataKey="period"
-                    axisLine={false}
-                    height={30}
-                    interval={0}
-                    minTickGap={0}
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => formatMonthTick(String(value))}
-                  />
-                  <YAxis yAxisId="revenue" hide domain={[3000, 10_000]} />
-                  <YAxis yAxisId="profit" hide domain={[0, 6000]} />
+                  <XAxis dataKey="period" axisLine={false} tickLine={false} tickMargin={8} />
+                  <YAxis yAxisId="revenue" hide />
+                  <YAxis yAxisId="profit" hide />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
                         className="w-40"
-                        labelFormatter={(value) => formatTooltipLabel(String(value))}
                         formatter={(value, name, item) => (
                           <>
-                            <div
-                              className="size-2.5 shrink-0 rounded-[2px]"
-                              style={{
-                                backgroundColor: item.color,
-                              }}
-                            />
+                            <div className="size-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: item.color }} />
                             <div className="flex flex-1 items-center justify-between leading-none">
                               <span className="text-muted-foreground">{String(name ?? "")}</span>
                               <span className="font-medium font-mono text-foreground tabular-nums">
-                                {formatCurrencyTooltipValue(value)}
+                                {formatVND(Number(value))}
                               </span>
                             </div>
                           </>
                         )}
                       />
                     }
-                    cursor={{
-                      stroke: "var(--border)",
-                      strokeDasharray: "4 4",
-                    }}
+                    cursor={{ stroke: "var(--border)", strokeDasharray: "4 4" }}
                   />
                   <Bar
                     yAxisId="profit"
@@ -286,12 +207,6 @@ export function KpiStrip() {
                     stroke="var(--color-revenue)"
                     strokeWidth={1.8}
                     type="linear"
-                    activeDot={{
-                      r: 4,
-                      fill: "var(--background)",
-                      stroke: "var(--color-revenue)",
-                      strokeWidth: 2,
-                    }}
                     dot={false}
                   />
                 </ComposedChart>

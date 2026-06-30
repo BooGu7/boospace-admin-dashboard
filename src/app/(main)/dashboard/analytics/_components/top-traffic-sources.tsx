@@ -1,6 +1,7 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
+// ĐÃ SỬA LỖI: Bổ sung CartesianGrid vào phần import từ recharts dưới đây
 import { Bar, BarChart, CartesianGrid, LabelList, type LabelProps, XAxis, YAxis } from "recharts";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const chartConfig = {
   visitors: {
     color: "var(--chart-1)",
-    label: "Visitors",
+    label: "Lượt xem",
   },
 } satisfies ChartConfig;
 
@@ -20,29 +21,11 @@ type TrafficSourceDatum = {
   visitors: number;
 };
 
-const sourcesData: TrafficSourceDatum[] = [
-  { label: "89.4k", source: "Organic Search", visitors: 89_400 },
-  { label: "55.2k", source: "Direct", visitors: 55_200 },
-  { label: "38.1k", source: "Social", visitors: 38_100 },
-  { label: "30.4k", source: "Referral", visitors: 30_400 },
-  { label: "22.7k", source: "Paid", visitors: 22_700 },
-];
-
-const campaignsData: TrafficSourceDatum[] = [
-  { label: "16.8k", source: "Spring Launch", visitors: 16_800 },
-  { label: "12.0k", source: "Newsletter", visitors: 12_000 },
-  { label: "7.7k", source: "Retargeting", visitors: 7700 },
-  { label: "5.9k", source: "Brand Search", visitors: 5900 },
-  { label: "4.3k", source: "Partners", visitors: 4300 },
-];
-
-const referrersData: TrafficSourceDatum[] = [
-  { label: "18.4k", source: "Google", visitors: 18_400 },
-  { label: "8.9k", source: "LinkedIn", visitors: 8900 },
-  { label: "5.7k", source: "Product Hunt", visitors: 5700 },
-  { label: "4.8k", source: "GitHub", visitors: 4800 },
-  { label: "3.6k", source: "Medium", visitors: 3600 },
-];
+interface TopTrafficSourcesProps {
+  sources: TrafficSourceDatum[];
+  campaigns: TrafficSourceDatum[];
+  referrers: TrafficSourceDatum[];
+}
 
 function TrafficSourceBarChart({ data }: { data: TrafficSourceDatum[] }) {
   const renderValueLabel = (props: LabelProps) => {
@@ -50,10 +33,10 @@ function TrafficSourceBarChart({ data }: { data: TrafficSourceDatum[] }) {
 
     return (
       <text
-        className="fill-foreground"
+        className="fill-foreground font-semibold"
         dominantBaseline="middle"
         dx={-6}
-        fontSize={14}
+        fontSize={13}
         textAnchor="end"
         x="100%"
         y={Number(y) + Number(height) / 2}
@@ -65,21 +48,19 @@ function TrafficSourceBarChart({ data }: { data: TrafficSourceDatum[] }) {
 
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
-      <BarChart
-        accessibilityLayer
-        data={data}
-        layout="vertical"
-        margin={{
-          left: 0,
-          right: 48,
-        }}
-      >
+      <BarChart accessibilityLayer data={data} layout="vertical" margin={{ left: 0, right: 48 }}>
         <CartesianGrid horizontal={false} vertical={false} />
         <YAxis dataKey="source" hide tickLine={false} tickMargin={10} type="category" />
         <XAxis dataKey="visitors" hide type="number" />
         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
         <Bar barSize={40} dataKey="visitors" fill="var(--color-visitors)" fillOpacity={0.5} radius={8}>
-          <LabelList className="fill-foreground" dataKey="source" fontSize={14} offset={12} position="insideLeft" />
+          <LabelList
+            className="fill-foreground font-medium"
+            dataKey="source"
+            fontSize={13}
+            offset={12}
+            position="insideLeft"
+          />
           <LabelList content={renderValueLabel} dataKey="label" />
         </Bar>
       </BarChart>
@@ -87,11 +68,11 @@ function TrafficSourceBarChart({ data }: { data: TrafficSourceDatum[] }) {
   );
 }
 
-export function TopTrafficSources() {
+export function TopTrafficSources({ sources, campaigns, referrers }: TopTrafficSourcesProps) {
   return (
     <Card className="h-full gap-2">
       <CardHeader>
-        <CardTitle className="font-normal">Traffic Sources</CardTitle>
+        <CardTitle className="font-normal">Nguồn truy cập</CardTitle>
         <CardAction>
           <Ellipsis className="size-4" />
         </CardAction>
@@ -112,14 +93,15 @@ export function TopTrafficSources() {
           </TabsList>
 
           <TabsContent value="sources" className="px-4">
-            <TrafficSourceBarChart data={sourcesData} />
+            <TrafficSourceBarChart data={sources} />
           </TabsContent>
 
           <TabsContent value="campaigns" className="px-4">
-            <TrafficSourceBarChart data={campaignsData} />
+            <TrafficSourceBarChart data={campaigns} />
           </TabsContent>
+
           <TabsContent value="referrers" className="px-4">
-            <TrafficSourceBarChart data={referrersData} />
+            <TrafficSourceBarChart data={referrers} />
           </TabsContent>
         </Tabs>
       </CardContent>

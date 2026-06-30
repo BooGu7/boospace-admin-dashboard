@@ -1,9 +1,14 @@
-import { ArrowDownRight, ArrowUpRight, Ellipsis } from "lucide-react";
+"use client";
 
+import { ArrowUpRight, Ellipsis } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function AnalyticsKpiStrip() {
+export function AnalyticsKpiStrip({ stats }: { stats: any }) {
+  const formatNumber = (val: number) => {
+    return val >= 1000 ? `${(val / 1000).toFixed(1)}k` : `${val}`;
+  };
+
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
       <div className="grid divide-y *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-5">
@@ -16,19 +21,13 @@ export function AnalyticsKpiStrip() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl leading-none tracking-tight">213.1k</div>
+              <div className="text-2xl font-bold leading-none tracking-tight">{formatNumber(stats.uniqueVisitors)}</div>
               <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                <ArrowUpRight />
-                2.8%
+                <ArrowUpRight className="size-3 mr-0.5" /> 2.8%
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>
-                from <span className="text-foreground">207.3k</span>
-              </span>
-              <span>•</span>
-              <span>last 4 weeks</span>
+            <div className="text-muted-foreground text-xs">
+              <span>Độc nhất • last 4 weeks</span>
             </div>
           </CardContent>
         </Card>
@@ -42,19 +41,13 @@ export function AnalyticsKpiStrip() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl leading-none tracking-tight">248.6k</div>
+              <div className="text-2xl font-bold leading-none tracking-tight">{formatNumber(stats.totalSessions)}</div>
               <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                <ArrowUpRight />
-                2.1%
+                <ArrowUpRight className="size-3 mr-0.5" /> 2.1%
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>
-                from <span className="text-foreground">243.5k</span>
-              </span>
-              <span>•</span>
-              <span>last 4 weeks</span>
+            <div className="text-muted-foreground text-xs">
+              <span>Phiên kết nối • last 4 weeks</span>
             </div>
           </CardContent>
         </Card>
@@ -68,19 +61,13 @@ export function AnalyticsKpiStrip() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl leading-none tracking-tight">547.9k</div>
-              <Badge className="bg-destructive/10 text-destructive">
-                <ArrowDownRight />
-                3.3%
+              <div className="text-2xl font-bold leading-none tracking-tight">{formatNumber(stats.totalPageviews)}</div>
+              <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                <ArrowUpRight className="size-3 mr-0.5" /> Live
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>
-                from <span className="text-foreground">566.8k</span>
-              </span>
-              <span>•</span>
-              <span>last 4 weeks</span>
+            <div className="text-muted-foreground text-xs">
+              <span>Lượt xem trang • last 4 weeks</span>
             </div>
           </CardContent>
         </Card>
@@ -94,19 +81,13 @@ export function AnalyticsKpiStrip() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl leading-none tracking-tight">61.4%</div>
+              <div className="text-2xl font-bold leading-none tracking-tight">61.4%</div>
               <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                <ArrowUpRight />
-                4.2%
+                <ArrowUpRight className="size-3 mr-0.5" /> 4.2%
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>
-                from <span className="text-foreground">58.9%</span>
-              </span>
-              <span>•</span>
-              <span>last 4 weeks</span>
+            <div className="text-muted-foreground text-xs">
+              <span>Tỷ lệ tương tác • last 4 weeks</span>
             </div>
           </CardContent>
         </Card>
@@ -120,19 +101,15 @@ export function AnalyticsKpiStrip() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl leading-none tracking-tight">8.4%</div>
-              <Badge className="bg-destructive/10 text-destructive">
-                <ArrowDownRight />
-                5.6%
+              <div className="text-2xl font-bold text-emerald-600 leading-none tracking-tight">
+                {stats.conversionRate}%
+              </div>
+              <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                <ArrowUpRight className="size-3 mr-0.5" /> CR
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span>
-                from <span className="text-foreground">8.9%</span>
-              </span>
-              <span>•</span>
-              <span>last 4 weeks</span>
+            <div className="text-muted-foreground text-xs">
+              <span>Tỷ lệ mua hàng / profiles</span>
             </div>
           </CardContent>
         </Card>

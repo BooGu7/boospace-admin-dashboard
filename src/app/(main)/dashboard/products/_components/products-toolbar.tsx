@@ -1,28 +1,20 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-interface Props {
-  search?: string;
-}
-
-export function ProductsToolbar({ search = "" }: Props) {
+export function ProductsToolbar() {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="relative w-full md:w-80">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-        <Input placeholder="Search product..." defaultValue={search} className="pl-10" />
+    <div className="flex items-center justify-between border-b pb-4">
+      <div>
+        <h1 className="text-2xl font-bold">Danh sách kho hàng</h1>
+        <p className="text-sm text-muted-foreground mt-1">Quản lý toàn bộ phôi in 3D và phụ kiện DIY.</p>
       </div>
-
-      <Button asChild>
+      <Button asChild size="sm">
         <Link href="/dashboard/products/new">
           <Plus className="mr-2 h-4 w-4" />
-          New Product
+          Thêm sản phẩm
         </Link>
       </Button>
     </div>

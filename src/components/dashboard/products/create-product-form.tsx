@@ -1,13 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft, Loader2, Save } from "lucide-react";
+import { ChevronLeft, DollarSign, LayoutGrid, Loader2, Package, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-
-import { createProductAction } from "@/actions/product.actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -16,96 +14,104 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { type ProductFormValues, productSchema } from "@/schemas/product.schema";
-
 import { ImageUpload } from "./image-upload";
 
-interface CreateProductFormProps {
+interface Props {
+  initialData?: any;
   categories: { id: string; name: string }[];
   brands: { id: string; name: string }[];
+  onSubmit: (values: ProductFormValues) => Promise<{ success: boolean; error?: string }>;
 }
 
-export function CreateProductForm({ categories, brands }: CreateProductFormProps) {
+export function ProductForm({ initialData, categories, brands, onSubmit }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
+  const isEdit = !!initialData;
 
-  // Khởi tạo Form với đầy đủ các key để tránh lỗi Resolver
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema) as any,
-    defaultValues: {
-      name: "",
-      slug: "",
-      category_id: null,
-      brand_id: null,
-      short_description: null,
-      description: null,
-      sku: null,
-      barcode: null,
-      price: 0,
-      compare_price: null,
-      cost_price: null,
-      weight: null,
-      featured: false,
-      published: true,
-      seo_title: null,
-      seo_description: null,
-      images: [],
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          category_id: initialData.category_id || null,
+          brand_id: initialData.brand_id || null,
+          images: initialData.images || [],
+        }
+      : {
+          name: "",
+          slug: "",
+          price: 0,
+          published: true,
+          images: [],
+          category_id: null,
+          brand_id: null,
+          description: "",
+          sku: "",
+          featured: false,
+          short_description: null,
+          compare_price: null,
+          cost_price: null,
+          weight: null,
+        },
   });
 
-  // Tự động tạo slug từ tên sản phẩm
   const nameValue = form.watch("name");
   React.useEffect(() => {
-    if (nameValue) {
+    if (!isEdit && nameValue) {
       const slug = nameValue
         .toLowerCase()
         .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[\s_-]+/g, "-")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .replace(/([^0-9a-z-\s])/g, "")
+        .replace(/(\s+)/g, "-")
+        .replace(/-+/g, "-")
         .replace(/^-+|-+$/g, "");
       form.setValue("slug", slug, { shouldValidate: true });
     }
-  }, [nameValue, form]);
+  }, [nameValue, isEdit, form]);
 
-  async function onSubmit(values: ProductFormValues) {
+  const handleFormSubmit = async (values: ProductFormValues) => {
     startTransition(async () => {
-      const result = await createProductAction(values);
+      const result = await onSubmit(values);
       if (result.success) {
-        toast.success("Sản phẩm đã được tạo thành công!");
+        toast.success(isEdit ? "Cập nhật thành công" : "Tạo sản phẩm thành công");
         router.push("/dashboard/products");
         router.refresh();
       } else {
-        toast.error(result.error || "Có lỗi xảy ra khi lưu sản phẩm");
+        toast.error(result.error || "Có lỗi xảy ra");
       }
     });
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-10">
-        {/* Header Action Bar */}
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8 pb-10">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" type="button" onClick={() => router.back()}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-semibold tracking-tight">Thêm sản phẩm mới</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {isEdit ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
+          </h1>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" type="button" onClick={() => router.back()} disabled={isPending}>
               Hủy
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {isPending ? "Đang lưu..." : "Lưu sản phẩm"}
+              {isEdit ? "Lưu thay đổi" : "Tạo sản phẩm"}
             </Button>
           </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-[1fr_300px] lg:grid-cols-3">
-          {/* CỘT CHÍNH - BÊN TRÁI */}
           <div className="grid auto-rows-max items-start gap-6 lg:col-span-2">
             {/* Hình ảnh */}
             <Card>
               <CardHeader>
-                <CardTitle>Hình ảnh sản phẩm</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">Hình ảnh sản phẩm</CardTitle>
               </CardHeader>
               <CardContent>
                 <FormField
@@ -114,19 +120,20 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <ImageUpload value={field.value} onChange={field.onChange} />
+                        <ImageUpload value={field.value || []} onChange={field.onChange} />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </CardContent>
             </Card>
 
-            {/* Thông tin cơ bản */}
+            {/* Thông tin */}
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin sản phẩm</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" /> Thông tin cơ bản
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -136,52 +143,61 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
                     <FormItem>
                       <FormLabel>Tên sản phẩm</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ví dụ: Mô hình 3D Iron Man" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug (Đường dẫn)</FormLabel>
-                      <FormControl>
                         <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug (Đường dẫn)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mã SKU</FormLabel>
+                        <FormControl>
+                          <Input placeholder="BOO-001" {...field} value={field.value || ""} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mô tả chi tiết</FormLabel>
+                      <FormLabel>Mô tả</FormLabel>
                       <FormControl>
-                        <Textarea
-                          className="min-h-32"
-                          placeholder="Thông số kỹ thuật, vật liệu in..."
-                          {...field}
-                          value={field.value || ""}
-                        />
+                        <Textarea className="min-h-32" {...field} value={field.value || ""} />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </CardContent>
             </Card>
 
-            {/* Giá cả & SKU */}
+            {/* Giá cả */}
             <Card>
               <CardHeader>
-                <CardTitle>Giá cả & Mã hàng</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" /> Giá cả & Giá vốn
+                </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <FormField
                   control={form.control}
                   name="price"
@@ -191,20 +207,31 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="sku"
+                  name="compare_price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mã SKU</FormLabel>
+                      <FormLabel>Giá so sánh (Gốc)</FormLabel>
                       <FormControl>
-                        <Input placeholder="BOO-3D-001" {...field} value={field.value || ""} />
+                        <Input type="number" {...field} value={field.value || ""} />
                       </FormControl>
-                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/* BỔ SUNG Ô NHẬP GIÁ VỐN SẢN XUẤT */}
+                <FormField
+                  control={form.control}
+                  name="cost_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Giá vốn (COGS)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} value={field.value || ""} />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
@@ -212,12 +239,10 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
             </Card>
           </div>
 
-          {/* CỘT PHỤ - BÊN PHẢI */}
           <div className="grid auto-rows-max items-start gap-6">
-            {/* Trạng thái hiển thị */}
             <Card>
               <CardHeader>
-                <CardTitle>Trạng thái</CardTitle>
+                <CardTitle className="text-base">Trạng thái</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -247,10 +272,11 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
               </CardContent>
             </Card>
 
-            {/* Phân loại */}
             <Card>
               <CardHeader>
-                <CardTitle>Phân loại</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="h-4 w-4" /> Phân loại
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -273,10 +299,10 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
+                {/* BỔ SUNG CHỌN THƯƠNG HIỆU ĐỒNG BỘ */}
                 <FormField
                   control={form.control}
                   name="brand_id"
@@ -297,7 +323,6 @@ export function CreateProductForm({ categories, brands }: CreateProductFormProps
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />

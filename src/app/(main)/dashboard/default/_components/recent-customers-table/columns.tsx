@@ -1,5 +1,4 @@
 "use client";
-"use no memo";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { addMinutes, differenceInCalendarDays, endOfToday, format, parseISO } from "date-fns";
@@ -60,7 +59,9 @@ export const recentCustomersColumns: ColumnDef<RecentCustomerRow>[] = [
           <div className="flex items-end justify-between gap-3">
             <div className="grid min-w-0 gap-0.5">
               <span className="truncate font-medium text-sm leading-none">{row.original.name}</span>
-              <span className="truncate text-muted-foreground text-xs leading-none">#{row.original.id}</span>
+              <span className="truncate text-muted-foreground text-xs leading-none">
+                #{row.original.id.substring(0, 8)}
+              </span>
             </div>
           </div>
         </div>
@@ -117,7 +118,13 @@ export const recentCustomersColumns: ColumnDef<RecentCustomerRow>[] = [
     header: "Joined",
     cell: ({ row }) => {
       const baseDate = parseISO(row.original.joined);
-      const joinedAt = addMinutes(baseDate, 9 * 60 + (Number(row.original.id) % 12) * 17);
+
+      // SỬA LỖI UUID: Lọc chỉ giữ lại chữ số từ chuỗi UUID để chuyển đổi an toàn thành Number
+      const rawId = row.original.id;
+      const parsedId = Number.parseInt(rawId.replace(/\D/g, ""), 10) || 0;
+
+      // Tính toán thời gian an toàn không lo bị lỗi NaN
+      const joinedAt = addMinutes(baseDate, 9 * 60 + (parsedId % 12) * 17);
 
       return (
         <div className="grid gap-0.5">

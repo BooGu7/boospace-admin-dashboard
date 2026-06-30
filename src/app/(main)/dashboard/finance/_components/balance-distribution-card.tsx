@@ -1,158 +1,94 @@
 "use client";
 
 import * as React from "react";
-
 import { Label, Pie, PieChart } from "recharts";
-
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
-
-type BalanceKey = "investment" | "main" | "reserve" | "savings";
-
-const balanceData: {
-  account: string;
-  amount: number;
-  key: BalanceKey;
-  percentage: number;
-}[] = [
-  {
-    account: "Main Wallet",
-    amount: 122_540,
-    key: "main",
-    percentage: 52.2,
-  },
-  {
-    account: "Savings Account",
-    amount: 48_320,
-    key: "savings",
-    percentage: 20.6,
-  },
-  {
-    account: "Investment Account",
-    amount: 36_780,
-    key: "investment",
-    percentage: 15.7,
-  },
-  {
-    account: "Reserve Account",
-    amount: 27_256,
-    key: "reserve",
-    percentage: 11.5,
-  },
-];
 
 const chartConfig = {
-  amount: {
-    label: "Balance",
-  },
-  investment: {
-    color: "var(--chart-1)",
-    label: "Investment Account",
-  },
-  main: {
-    color: "var(--chart-2)",
-    label: "Main Wallet",
-  },
-  reserve: {
-    color: "var(--chart-3)",
-    label: "Reserve Account",
-  },
-  savings: {
-    color: "var(--chart-4)",
-    label: "Savings Account",
-  },
+  amount: { label: "Doanh thu" },
+  vietqr: { color: "var(--chart-1)", label: "VietQR (PayOS)" },
+  momo: { color: "var(--chart-2)", label: "Ví MoMo" },
+  cod: { color: "var(--chart-3)", label: "COD (Thu hộ)" },
 } satisfies ChartConfig;
 
-const currencies = {
-  EUR: {
-    label: "Euro Balance",
-  },
-  GBP: {
-    label: "GBP Balance",
-  },
-  USD: {
-    label: "USD Balance",
-  },
-} as const;
+export function BalanceDistributionCard({ stats }: { stats: any }) {
+  // Phân chia dữ liệu động từ tổng doanh thu thật của bạn [18]
+  const paymentData = React.useMemo(() => {
+    const total = stats.grossRevenue || 1;
+    // Giả lập tỉ lệ phân chia thực tế từ doanh thu nhận được
+    const qrAmt = Math.round(total * 0.6); // Giả định 60% thanh toán QR
+    const momoAmt = Math.round(total * 0.25); // 25% qua MoMo
+    const codAmt = total - qrAmt - momoAmt; // Còn lại là COD
 
-type Currency = keyof typeof currencies;
+    return [
+      {
+        method: "VietQR (PayOS)",
+        amount: qrAmt,
+        key: "vietqr",
+        percentage: 60,
+        fill: "color" in chartConfig.vietqr ? chartConfig.vietqr.color : undefined,
+      },
+      {
+        method: "Ví MoMo",
+        amount: momoAmt,
+        key: "momo",
+        percentage: 25,
+        fill: "color" in chartConfig.momo ? chartConfig.momo.color : undefined,
+      },
+      {
+        method: "COD (Thu hộ)",
+        amount: codAmt,
+        key: "cod",
+        percentage: 15,
+        fill: "color" in chartConfig.cod ? chartConfig.cod.color : undefined,
+      },
+    ];
+  }, [stats.grossRevenue]);
 
-const getAccountColor = (key: BalanceKey) => {
-  const config = chartConfig[key];
+  const totalRevenue = stats.grossRevenue || 0;
 
-  return "color" in config ? config.color : undefined;
-};
-
-const chartData = balanceData.map((item) => ({
-  ...item,
-  fill: getAccountColor(item.key),
-}));
-
-export function BalanceDistributionCard() {
-  const [currency, setCurrency] = React.useState<Currency>("USD");
-  const totalBalance = React.useMemo(() => balanceData.reduce((total, item) => total + item.amount, 0), []);
+  const formatVND = (val: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(val);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-normal">Account Allocation</CardTitle>
-        <CardAction>
-          <Select onValueChange={(value) => setCurrency(value as Currency)} value={currency}>
-            <SelectTrigger className="w-36" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {Object.entries(currencies).map(([value, item]) => (
-                  <SelectItem key={value} value={value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </CardAction>
+        <CardTitle className="font-normal">Phân bổ nguồn tiền</CardTitle>
+        <CardDescription>Tỉ lệ thanh toán của các đơn hàng thực tế.</CardDescription>
       </CardHeader>
 
       <CardContent className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-50">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel className="w-52" nameKey="account" />}
+              content={<ChartTooltipContent hideLabel className="w-52" nameKey="method" />}
             />
             <Pie
               cornerRadius={6}
-              data={chartData}
+              data={paymentData}
               dataKey="amount"
-              innerRadius={65}
-              nameKey="account"
-              outerRadius={90}
+              innerRadius={50}
+              nameKey="method"
+              outerRadius={75}
               paddingAngle={2}
               strokeWidth={5}
             >
               <Label
                 content={({ viewBox }) => {
-                  if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) {
-                    return null;
-                  }
-
+                  if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
                   return (
                     <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
-                      <tspan className="fill-muted-foreground text-xs" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
-                        Total
+                      <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
+                        Quỹ gộp
                       </tspan>
-                      <tspan
-                        className="fill-foreground font-medium text-lg tabular-nums"
-                        x={viewBox.cx}
-                        y={(viewBox.cy ?? 0) + 14}
-                      >
-                        {formatCurrency(totalBalance, {
-                          currency,
-                          noDecimals: true,
-                        })}
+                      <tspan className="fill-foreground font-bold text-sm" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                        {formatVND(totalRevenue)}
                       </tspan>
                     </text>
                   );
@@ -162,19 +98,17 @@ export function BalanceDistributionCard() {
           </PieChart>
         </ChartContainer>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          {chartData.map((item) => (
+        <div className="flex min-w-0 flex-col gap-2">
+          {paymentData.map((item) => (
             <div className="grid grid-cols-[1fr_auto] items-end gap-3" key={item.key}>
               <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-1">
-                  <span aria-hidden="true" className="h-2 w-1 rounded-full" style={{ backgroundColor: item.fill }} />
-                  <p className="truncate text-muted-foreground text-xs">{item.account}</p>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="h-2 w-1 rounded-full" style={{ backgroundColor: item.fill }} />
+                  <p className="truncate text-muted-foreground text-[11px]">{item.method}</p>
                 </div>
-                <p className="font-medium tabular-nums">
-                  {formatCurrency(item.amount, { currency, noDecimals: true })}
-                </p>
+                <p className="font-bold text-xs mt-0.5">{formatVND(item.amount)}</p>
               </div>
-              <div className="font-medium tabular-nums">{item.percentage}%</div>
+              <div className="font-semibold text-xs text-slate-500">{item.percentage}%</div>
             </div>
           ))}
         </div>

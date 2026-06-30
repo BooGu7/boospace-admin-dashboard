@@ -1,64 +1,76 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
 
-export function OverviewKpis() {
+import { ArrowDownRight, ArrowUpRight, DollarSign, Percent } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+
+export function OverviewKpis({ stats }: { stats: any }) {
+  const formatVND = (val: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(val);
+
   return (
-    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-      <div className="grid grid-cols-1 xl:grid-cols-8">
-        <Card className="gap-5 overflow-hidden rounded-none border-0 border-foreground/10 border-b ring-0 xl:col-span-4 xl:border-r">
-          <CardHeader>
-            <CardTitle className="font-normal">Net worth</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end justify-between">
-            <div className="space-y-1">
-              <div className="text-3xl leading-none tracking-tight">$128.4K</div>
-              <p className="text-muted-foreground text-xs">+$9.8K vs last month</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
+      <Card>
+        <CardContent className="p-6 flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Doanh thu gộp</span>
+              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-md">
+                <ArrowUpRight className="size-4" />
+              </span>
             </div>
-            <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">+8.4%</Badge>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-bold mt-2">{formatVND(stats.grossRevenue)}</div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Doanh số thu về từ đơn hàng</p>
+        </CardContent>
+      </Card>
 
-        <Card className="gap-5 overflow-hidden rounded-none border-0 border-foreground/10 border-b ring-0 xl:col-span-4">
-          <CardHeader>
-            <CardTitle className="font-normal">Available cash</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl leading-none tracking-tight">$12.8K</div>
-              <p className="text-muted-foreground text-xs">$410 above your 30-day average</p>
+      <Card>
+        <CardContent className="p-6 flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Giá vốn sản xuất</span>
+              <span className="p-1 bg-red-50 text-red-600 rounded-md">
+                <ArrowDownRight className="size-4" />
+              </span>
             </div>
-            <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">+3.2%</Badge>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-bold mt-2">{formatVND(stats.totalCogs)}</div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Chi phí phôi nhựa và nguyên liệu in</p>
+        </CardContent>
+      </Card>
 
-        <Card className="gap-5 overflow-hidden rounded-none border-0 border-foreground/10 ring-0 xl:col-span-4 xl:border-r">
-          <CardHeader>
-            <CardTitle className="font-normal">Monthly spend</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl leading-none tracking-tight">$2,140</div>
-              <p className="text-muted-foreground text-xs">$124 more than last month</p>
+      <Card>
+        <CardContent className="p-6 flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Lợi nhuận ròng</span>
+              <span className="p-1 bg-emerald-50 text-emerald-600 rounded-md">
+                <DollarSign className="size-4" />
+              </span>
             </div>
-            <Badge variant="destructive" className="bg-destructive/10 text-destructive">
-              +6.1%
-            </Badge>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-bold text-emerald-600 mt-2">{formatVND(stats.netProfit)}</div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Tiền lãi thực tế thu về</p>
+        </CardContent>
+      </Card>
 
-        <Card className="gap-5 overflow-hidden rounded-none border-0 ring-0 xl:col-span-4">
-          <CardHeader>
-            <CardTitle className="font-normal">Savings rate</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-end justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl leading-none tracking-tight">28%</div>
-              <p className="text-muted-foreground text-xs">Up from 25.6% last month</p>
+      <Card>
+        <CardContent className="p-6 flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Tỷ suất lợi nhuận</span>
+              <span className="p-1 bg-indigo-50 text-indigo-600 rounded-md">
+                <Percent className="size-4" />
+              </span>
             </div>
-            <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">+2.4%</Badge>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="text-2xl font-bold mt-2">{stats.profitMargin}%</div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Biên lợi nhuận trung bình của shop</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

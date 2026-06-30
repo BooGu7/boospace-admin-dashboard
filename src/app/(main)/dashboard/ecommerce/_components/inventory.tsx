@@ -2,79 +2,51 @@
 
 import { ArrowUpRight, PackageCheck, PackageX, TriangleAlert } from "lucide-react";
 import { Label, Pie, PieChart } from "recharts";
-
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
 
-const chartData = [{ month: "current", "in-stock": 760, "low-stock": 320, "out-of-stock": 160 }];
-const totalUnits = chartData[0]["in-stock"] + chartData[0]["low-stock"] + chartData[0]["out-of-stock"];
-const availablePercent = Math.round((chartData[0]["in-stock"] / totalUnits) * 100);
 const gaugeSegmentCount = 32;
-const inStockSegments = Math.round((chartData[0]["in-stock"] / totalUnits) * gaugeSegmentCount);
-const lowStockSegments = Math.round((chartData[0]["low-stock"] / totalUnits) * gaugeSegmentCount);
-
-function getGaugeSegmentStatus(index: number) {
-  if (index < inStockSegments) {
-    return "in-stock";
-  }
-
-  if (index < inStockSegments + lowStockSegments) {
-    return "low-stock";
-  }
-
-  return "out-of-stock";
-}
-
-const gaugeSegments = Array.from({ length: gaugeSegmentCount }, (_, index) => {
-  const status = getGaugeSegmentStatus(index);
-  return {
-    fill: `var(--color-${status})`,
-    id: `segment-${index + 1}`,
-    status,
-    value: 1,
-  };
-});
-const inventorySummary = [
-  {
-    icon: PackageCheck,
-    label: "In stock",
-    value: chartData[0]["in-stock"],
-  },
-  {
-    icon: TriangleAlert,
-    label: "Low stock",
-    value: chartData[0]["low-stock"],
-  },
-  {
-    icon: PackageX,
-    label: "Out",
-    value: chartData[0]["out-of-stock"],
-  },
-] as const;
 
 const chartConfig = {
-  "in-stock": {
-    label: "In stock",
-    color: "var(--chart-2)",
-  },
-  "low-stock": {
-    label: "Low stock",
-    color: "var(--chart-1)",
-  },
-  "out-of-stock": {
-    label: "Out of stock",
-    color: "var(--destructive)",
-  },
+  "in-stock": { label: "In stock", color: "var(--chart-2)" },
+  "low-stock": { label: "Low stock", color: "var(--chart-1)" },
+  "out-of-stock": { label: "Out of stock", color: "var(--destructive)" },
 } satisfies ChartConfig;
 
-export function Inventory() {
+export function Inventory({ data }: { data: any }) {
+  const totalUnits = data.inStock + data.lowStock + data.outOfStock || 1;
+  const inStockSegments = Math.round((data.inStock / totalUnits) * gaugeSegmentCount);
+  const lowStockSegments = Math.round((data.lowStock / totalUnits) * gaugeSegmentCount);
+
+  function getGaugeSegmentStatus(index: number) {
+    if (index < inStockSegments) return "in-stock";
+    if (index < inStockSegments + lowStockSegments) return "low-stock";
+    return "out-of-stock";
+  }
+
+  const gaugeSegments = Array.from({ length: gaugeSegmentCount }, (_, index) => {
+    const status = getGaugeSegmentStatus(index);
+    return {
+      fill: `var(--color-${status})`,
+      id: `segment-${index + 1}`,
+      status,
+      value: 1,
+    };
+  });
+
+  const inventorySummary = [
+    { icon: PackageCheck, label: "Đủ hàng", value: data.inStock },
+    { icon: TriangleAlert, label: "Tồn thấp", value: data.lowStock },
+    { icon: PackageX, label: "Hết hàng", value: data.outOfStock },
+  ] as const;
+
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-sm">Inventory</CardTitle>
+        <CardTitle className="font-normal text-muted-foreground text-sm">Tồn kho xưởng in</CardTitle>
         <CardDescription className="text-foreground text-xl tabular-nums leading-none tracking-tight">
-          {availablePercent}% available
+          {data.availablePercent}% Đủ hàng
         </CardDescription>
         <CardAction>
           <ArrowUpRight className="size-4" />
@@ -107,10 +79,10 @@ export function Inventory() {
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 22}
                         >
-                          {availablePercent}%
+                          {data.availablePercent}%
                         </tspan>
-                        <tspan className="fill-muted-foreground text-xs" x={viewBox.cx} y={(viewBox.cy || 0) + 38}>
-                          Available
+                        <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy || 0) + 38}>
+                          Sẵn sàng
                         </tspan>
                       </text>
                     );
@@ -123,14 +95,14 @@ export function Inventory() {
         <Separator />
 
         <div className="grid grid-cols-3 divide-x">
-          {inventorySummary.map((item, _index) => (
+          {inventorySummary.map((item) => (
             <div key={item.label} className="flex flex-col items-center gap-3 text-center">
               <div className="grid size-9 place-items-center rounded-full bg-muted">
                 <item.icon className="size-4 text-muted-foreground" />
               </div>
               <div>
                 <div className="text-muted-foreground text-xs leading-none">{item.label}</div>
-                <div className="font-medium text-sm tabular-nums">{item.value.toLocaleString()}</div>
+                <div className="font-bold text-sm mt-1 tabular-nums">{item.value.toLocaleString()}</div>
               </div>
             </div>
           ))}

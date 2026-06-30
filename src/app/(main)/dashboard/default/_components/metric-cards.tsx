@@ -1,11 +1,20 @@
-import { DollarSign, TrendingDown, TrendingUp, UserPlus, Users, Waves } from "lucide-react";
+"use client";
 
+import { DollarSign, FolderTree, Package, ShoppingCart, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+// ĐÃ SỬA LỖI: Bổ sung CardDescription vào phần import dưới đây
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function MetricCards() {
+export function MetricCards({ stats }: { stats: any }) {
+  const formatVND = (val: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(val);
+
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs xl:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      {/* CARD 1: DOANH THU THẬT */}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -13,80 +22,74 @@ export function MetricCards() {
               <DollarSign className="size-4" />
             </div>
           </CardTitle>
-          <CardDescription>Total Revenue</CardDescription>
+          <CardDescription>Tổng doanh thu</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">$1,250.00</div>
+            <div className="font-medium text-2xl tabular-nums leading-none tracking-tight">
+              {formatVND(stats.totalRevenue)}
+            </div>
             <Badge>
-              <TrendingUp className="size-3" />
-              +12.5%
+              <TrendingUp className="size-3 mr-1" />
+              Live
             </Badge>
           </div>
-          <p className="text-muted-foreground text-sm">Visitors for the last 6 months</p>
+          <p className="text-muted-foreground text-xs">Tổng dòng tiền thu được từ đơn hàng</p>
         </CardContent>
       </Card>
 
+      {/* CARD 2: ĐƠN HÀNG MỚI THẬT */}
       <Card>
         <CardHeader>
           <CardTitle>
             <div className="flex size-7 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-              <UserPlus className="size-4" />
+              <ShoppingCart className="size-4" />
             </div>
           </CardTitle>
-          <CardDescription>New Customers</CardDescription>
+          <CardDescription>Đơn hàng mới</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">1,234</div>
-            <Badge variant="destructive">
-              <TrendingDown className="size-3" />
-              -20%
-            </Badge>
+            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">+{stats.totalOrders}</div>
+            <Badge variant="secondary">Pending: {stats.pendingOrders}</Badge>
           </div>
-          <p className="text-muted-foreground text-sm">Acquisition needs attention</p>
+          <p className="text-muted-foreground text-xs">Cần duyệt và in 3D vận chuyển ngay</p>
         </CardContent>
       </Card>
 
+      {/* CARD 3: SẢN PHẨM HOẠT ĐỘNG */}
       <Card>
         <CardHeader>
           <CardTitle>
             <div className="flex size-7 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-              <Users className="size-4" />
+              <Package className="size-4" />
             </div>
           </CardTitle>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>Sản phẩm hoạt động</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">45,678</div>
-            <Badge>
-              <TrendingUp className="size-3" />
-              +12.5%
-            </Badge>
+            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">{stats.productCount}</div>
           </div>
-          <p className="text-muted-foreground text-sm">Engagement exceeds targets</p>
+          <p className="text-muted-foreground text-xs">Số lượng mô hình 3D có sẵn trong kho</p>
         </CardContent>
       </Card>
 
+      {/* CARD 4: DANH MỤC SẢN PHẨM */}
       <Card>
         <CardHeader>
           <CardTitle>
             <div className="flex size-7 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-              <Waves className="size-4" />
+              <FolderTree className="size-4" />
             </div>
           </CardTitle>
-          <CardDescription>Growth Rate</CardDescription>
+          <CardDescription>Danh mục sản phẩm</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">4.5%</div>
-            <Badge>
-              <TrendingUp className="size-3" />
-              +4.5%
-            </Badge>
+            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">{stats.categoryCount}</div>
           </div>
-          <p className="text-muted-foreground text-sm">Meets growth projections</p>
+          <p className="text-muted-foreground text-xs">Phân loại mặt hàng Boospace</p>
         </CardContent>
       </Card>
     </div>

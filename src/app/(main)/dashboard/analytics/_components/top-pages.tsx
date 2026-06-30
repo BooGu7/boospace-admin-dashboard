@@ -1,31 +1,25 @@
-import { Ellipsis } from "lucide-react";
+"use client";
 
+import { Ellipsis } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const pages = [
-  { bounce: "24%", path: "/dashboard", time: "3m 12s", views: "64.2k" },
-  { bounce: "31%", path: "/pricing", time: "2m 08s", views: "41.8k" },
-  {
-    bounce: "18%",
-    path: "/docs/getting-started",
-    time: "4m 44s",
-    views: "28.6k",
-  },
-  {
-    bounce: "22%",
-    path: "/blog/analytics-guide",
-    time: "5m 06s",
-    views: "19.3k",
-  },
-  { bounce: "42%", path: "/contact", time: "1m 18s", views: "8.9k" },
-];
+interface TopPagesProps {
+  pages: {
+    path: string;
+    views: string;
+    time: string;
+    bounce: string;
+    name?: string;
+    percentage?: number;
+  }[];
+}
 
-export function TopPages() {
+export function TopPages({ pages }: TopPagesProps) {
   return (
     <Card className="h-full gap-2">
       <CardHeader>
-        <CardTitle className="font-normal">Page Performance</CardTitle>
+        <CardTitle className="font-normal text-slate-800">Hiệu suất trang sản phẩm</CardTitle>
         <CardAction>
           <Ellipsis className="size-4" />
         </CardAction>
@@ -35,21 +29,31 @@ export function TopPages() {
         <Table className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
           <TableHeader className="[&_tr]:border-border/50">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="h-8" />
-              <TableHead className="h-8 w-24 text-right font-normal">Views</TableHead>
-              <TableHead className="h-8 w-24 text-right font-normal">Avg Time</TableHead>
-              <TableHead className="h-8 w-20 text-right font-normal">Bounce</TableHead>
+              <TableHead className="h-8 font-medium">Đường dẫn trang (URL)</TableHead>
+              <TableHead className="h-8 w-24 text-right font-medium">Lượt xem</TableHead>
+              <TableHead className="h-8 w-24 text-right font-medium">Avg Time</TableHead>
+              <TableHead className="h-8 w-20 text-right font-medium">Bounce</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr]:border-border/50">
             {pages.map((page) => (
               <TableRow className="hover:bg-transparent" key={page.path}>
-                <TableCell className="max-w-0 truncate py-4 font-medium">{page.path}</TableCell>
-                <TableCell className="text-right tabular-nums">{page.views}</TableCell>
+                <TableCell className="max-w-xs truncate py-4 font-bold text-slate-800">
+                  <span className="text-slate-800 block font-bold">{page.name || "Sản phẩm 3D / DIY"}</span>
+                  <span className="text-xs text-blue-600 block font-normal mt-0.5">{page.path}</span>
+                </TableCell>
+                <TableCell className="text-right font-bold text-slate-700 tabular-nums">{page.views}</TableCell>
                 <TableCell className="text-right text-muted-foreground tabular-nums">{page.time}</TableCell>
                 <TableCell className="text-right text-muted-foreground tabular-nums">{page.bounce}</TableCell>
               </TableRow>
             ))}
+            {pages.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground text-sm">
+                  Chưa có lưu lượng truy cập sản phẩm thực tế.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

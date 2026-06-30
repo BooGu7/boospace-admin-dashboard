@@ -5,7 +5,6 @@ import { getOrdersService } from "@/lib/services/order.service";
 import { createClient } from "@/lib/supabase/server";
 import type { GetOrdersParams } from "@/types/order";
 
-// Định nghĩa kiểu trả về đồng nhất để tránh lỗi Type ở Hook
 export type GetOrdersResponse = {
   success: boolean;
   data: any[];
@@ -14,7 +13,7 @@ export type GetOrdersResponse = {
 };
 
 /**
- * ACTION LẤY DANH SÁCH ĐƠN HÀNG (Gọi từ bảng dữ liệu)
+ * ACTION LẤY DANH SÁCH ĐƠN HÀNG
  */
 export async function getOrders(params: GetOrdersParams): Promise<GetOrdersResponse> {
   try {
@@ -41,14 +40,26 @@ export async function getOrders(params: GetOrdersParams): Promise<GetOrdersRespo
 }
 
 /**
- * ACTION CẬP NHẬT TRẠNG THÁI (Gọi từ trang Chi tiết)
+ * ACTION CẬP NHẬT TRẠNG THÁI & GỬI EMAIL HÓA ĐƠN QUA RESEND [21]
  */
 export async function updateOrderStatusAction(id: string, status: string) {
   try {
     const supabase = await createClient();
-    const { error } = await supabase.from("orders").update({ order_status: status }).eq("id", id);
 
-    if (error) throw error;
+    // 1. Cập nhật trạng thái trong Database
+    const { error: updateError } = await supabase.from("orders").update({ order_status: status }).eq("id", id);
+
+    if (updateError) throw updateError;
+
+    // 2. Nếu chuyển sang "Confirmed", tự động kích hoạt gửi Email hóa đơn [21]
+    if (status === "Confirmed") {
+      const { getOrderWithDetails } = await import("@/lib/repositories/order.repository");
+      const order = await getOrderWithDetails(id);
+
+      if (order?.customerEmail) {
+        await sendInvoiceEmail(order);
+      }
+    }
 
     revalidatePath(`/dashboard/orders/${id}`);
     revalidatePath("/dashboard/orders");
@@ -64,7 +75,7 @@ export async function updateOrderStatusAction(id: string, status: string) {
 }
 
 /**
- * ACTION XÓA ĐƠN HÀNG (Gọi từ nút Xóa)
+ * ACTION XÓA ĐƠN HÀNG
  */
 export async function deleteOrderAction(id: string) {
   try {
@@ -76,5 +87,107 @@ export async function deleteOrderAction(id: string) {
   } catch (error: any) {
     console.error("[DELETE_ORDER_ACTION_ERROR]", error);
     return { success: false, error: error.message || "Không thể xóa đơn hàng" };
+  }
+}
+
+/**
+ * HÀM PHỤ TRỢ: SOẠN VÀ GỬI EMAIL QUA RESEND HTTP API [21]
+ */
+async function sendInvoiceEmail(order: any) {
+  // Ưu tiên lấy Key từ biến môi trường của bạn
+  const resendApiKey = process.env.RESEND_API_KEY || "re_3cz1Z9tS_FQtmoNAQAF7STG1XrCH3mwHA";
+
+  const formatVND = (val: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(val);
+
+  // Tạo danh sách sản phẩm dạng bảng cho Email
+  const itemsHtml =
+    order.order_items
+      ?.map(
+        (item: any) => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568;">
+        ${item.products?.name || "Sản phẩm 3D / DIY Custom"}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568; text-align: center;">
+        x${item.quantity}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #2d3748; text-align: right; font-weight: bold;">
+        ${formatVND(item.total_price)}
+      </td>
+    </tr>
+  `,
+      )
+      .join("") || "";
+
+  // Giao diện Email HTML cao cấp phong cách tối giản
+  const emailHtml = `
+    <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f7fafc; padding-bottom: 20px;">
+        <h1 style="color: #1a365d; font-size: 26px; margin: 0; font-weight: 800; letter-spacing: -0.5px;">BOOSPACE</h1>
+        <p style="color: #718096; font-size: 14px; margin: 5px 0 0 0;">Cửa hàng sản phẩm in 3D & DIY Workspace cao cấp</p>
+      </div>
+      
+      <div style="margin-bottom: 25px;">
+        <p style="font-size: 16px; color: #2d3748; margin-top: 0;">Chào <strong>${order.customerName}</strong>,</p>
+        <p style="font-size: 14px; color: #4a5568; line-height: 1.6; margin: 0;">
+          Cảm ơn bạn đã tin tưởng lựa chọn sản phẩm của Boospace! Đơn hàng của bạn đã được quản trị viên **xác nhận thành công** và đang được xếp vào hàng đợi in 3D/thiết kế.
+        </p>
+      </div>
+
+      <div style="background-color: #f7fafc; padding: 18px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #edf2f7;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; color: #4a5568;"><strong>Mã đơn hàng:</strong> #${order.code}</p>
+        <p style="margin: 0; font-size: 14px; color: #4a5568;"><strong>Thời gian xác nhận:</strong> ${new Date().toLocaleString("vi-VN")}</p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <thead>
+          <tr style="background-color: #f7fafc;">
+            <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #718096; border-bottom: 2px solid #edf2f7;">Sản phẩm</th>
+            <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase; color: #718096; border-bottom: 2px solid #edf2f7;">SL</th>
+            <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase; color: #718096; border-bottom: 2px solid #edf2f7;">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+          <tr>
+            <td colspan="2" style="padding: 18px 12px 12px 12px; font-size: 16px; font-weight: bold; color: #2d3748; text-align: right;">Tổng thanh toán:</td>
+            <td style="padding: 18px 12px 12px 12px; font-size: 20px; font-weight: bold; color: #2b6cb0; text-align: right;">
+              ${formatVND(order.total)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="border-top: 1px solid #edf2f7; padding-top: 25px; text-align: center; color: #a0aec0; font-size: 12px; line-height: 1.5;">
+        <p style="margin: 0 0 8px 0;">Mọi thắc mắc về kỹ thuật in hoặc tiến độ hoàn thiện, bạn vui lòng phản hồi qua email: <a href="mailto:hello@boospace.tech" style="color: #3182ce; text-decoration: none; font-weight: 600;">hello@boospace.tech</a></p>
+        <p style="margin: 0;">© 2026 Boospace. Quyết tâm kiến tạo không gian làm việc mơ ước của bạn.</p>
+      </div>
+    </div>
+  `;
+
+  // Gửi email qua API Resend
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${resendApiKey}`,
+    },
+    body: JSON.stringify({
+      from: "Boospace <onboarding@resend.dev>", // Tên thương hiệu hiển thị
+      to: order.customerEmail,
+      subject: `[Boospace] Xác nhận đơn hàng #${order.code} thành công!`,
+      html: emailHtml,
+    }),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json();
+    console.error("Gửi email qua Resend thất bại:", errData);
+  } else {
+    console.log(`Đã gửi hóa đơn tự động thành công tới ${order.customerEmail}`);
   }
 }

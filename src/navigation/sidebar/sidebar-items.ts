@@ -1,8 +1,10 @@
 import {
   Banknote,
+  Building2,
   Calendar,
   ChartBar,
   CheckSquare,
+  FolderTree,
   Forklift,
   Gauge,
   Kanban,
@@ -12,8 +14,8 @@ import {
   type LucideIcon,
   Mail,
   MessageSquare,
-  Package, // Đã thêm icon này
-  ReceiptText, // Đã thêm icon này
+  Package,
+  ReceiptText,
   ShoppingBag,
   Users,
 } from "lucide-react";
@@ -92,7 +94,7 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // SALES (MỤC MỚI THÊM VÀO ĐÂY)
+  // SALES
   // ==========================================================
   {
     id: 2,
@@ -102,7 +104,7 @@ export const sidebarItems: NavGroup[] = [
         id: "orders",
         title: "Orders",
         url: "/dashboard/orders",
-        icon: ReceiptText, // Icon hóa đơn
+        icon: ReceiptText,
         badge: "new",
       },
     ],
@@ -129,11 +131,13 @@ export const sidebarItems: NavGroup[] = [
             id: "categories",
             title: "Categories",
             url: "/dashboard/categories",
+            icon: FolderTree,
           },
           {
             id: "brands",
             title: "Brands",
             url: "/dashboard/brands",
+            icon: Building2,
           },
         ],
       },
