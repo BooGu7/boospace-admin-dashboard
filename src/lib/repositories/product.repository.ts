@@ -3,6 +3,7 @@ import type { ProductInsert, ProductUpdate, ProductWithRelations } from "@/types
 
 /**
  * LẤY DANH SÁCH TẤT CẢ SẢN PHẨM
+ * Đã chỉ định trực tiếp tên hai ràng buộc vật lý !fk_products_category và !fk_products_brand để giải quyết triệt để lỗi quan hệ kép [1.1]
  */
 export async function getProducts(): Promise<ProductWithRelations[]> {
   const supabase = await createClient();
@@ -11,24 +12,34 @@ export async function getProducts(): Promise<ProductWithRelations[]> {
     .select(
       `
         *,
-        categories(name),
-        brands(name)
+        categories!fk_products_category(name),
+        brands!fk_products_brand(name)
     `,
     )
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[GET_PRODUCTS_ERROR]", error);
+    throw new Error(error.message);
+  }
   return data as ProductWithRelations[];
 }
 
 /**
- * LẤY CHI TIẾT 1 SẢN PHẨM THEO ID (Hàm đang bị thiếu)
+ * LẤY CHI TIẾT 1 SẢN PHẨM THEO ID
+ * Đã chỉ định trực tiếp tên hai ràng buộc vật lý !fk_products_category và !fk_products_brand để tránh lỗi quan hệ kép [1.1]
  */
 export async function getProductById(id: string): Promise<ProductWithRelations> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("products")
-    .select("*, categories(name), brands(name)")
+    .select(
+      `
+        *, 
+        categories!fk_products_category(name), 
+        brands!fk_products_brand(name)
+      `,
+    )
     .eq("id", id)
     .single();
 

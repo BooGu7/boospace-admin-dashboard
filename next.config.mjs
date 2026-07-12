@@ -10,6 +10,9 @@ const nextConfig = {
     },
   },
   images: {
+    dangerouslyAllowSVG: true, // Kích hoạt hiển thị tệp vector mẫu SVG an toàn [21]
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandboxed;",
     remotePatterns: [
       {
         protocol: "https",

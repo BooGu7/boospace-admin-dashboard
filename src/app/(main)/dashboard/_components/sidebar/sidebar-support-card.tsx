@@ -1,27 +1,30 @@
+import { ShoppingBag, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-import { siX } from "simple-icons";
-
-import { SimpleIcon } from "@/components/simple-icon";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SidebarSupportCard() {
   return (
-    <Card size="sm" className="overflow-hidden shadow-none group-data-[collapsible=icon]:hidden">
-      <CardHeader className="min-w-0 px-4">
-        <CardTitle className="truncate text-sm">Looking for something more?</CardTitle>
-        <CardDescription className="line-clamp-2">
-          Open an issue or do reach out to me on&nbsp;
+    <Card
+      size="sm"
+      className="overflow-hidden shadow-none group-data-[collapsible=icon]:hidden border border-[#E1DDD5] bg-[#FCFAF2]"
+    >
+      <CardHeader className="min-w-0 px-4 py-3">
+        <CardTitle className="truncate text-xs font-serif font-bold text-black flex items-center gap-1">
+          Ghé cửa hàng nha! 🪴 <Sparkles className="size-3 text-[#FF9D00] animate-pulse" />
+        </CardTitle>
+        <CardDescription className="line-clamp-2 text-[11px] text-[#786F66] leading-relaxed">
+          Xem ngay các tác phẩm đèn ngủ nghệ thuật và đồ in 3D tối giản tại&nbsp;
           <Link
-            href="https://x.com/arhamkhnz"
+            href="https://www.boospace.tech"
             target="_blank"
             rel="noreferrer"
-            aria-label="Reach out on X"
-            className="inline-flex items-center text-foreground"
+            aria-label="Ghé thăm Boo Space"
+            className="inline-flex items-center text-black font-bold hover:text-[#FF9D00] hover:underline gap-0.5"
           >
-            <SimpleIcon icon={siX} aria-hidden className="size-3 fill-current" />
+            boospace.tech <ShoppingBag className="size-3 text-[#FF9D00]" />
           </Link>
-          .
+          . ✨
         </CardDescription>
       </CardHeader>
     </Card>

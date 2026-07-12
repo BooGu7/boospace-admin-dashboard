@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
 import * as productRepo from "@/lib/repositories/product.repository";
 import { createClient } from "@/lib/supabase/server";
 import { type ProductFormValues, productSchema } from "@/schemas/product.schema";
 import type { ProductInsert, ProductUpdate } from "@/types/product";
 
+/**
+ * TẠO MỚI SẢN PHẨM (Dạng Action đầy đủ)
+ */
 export async function createProductAction(values: ProductFormValues) {
   try {
     const validated = productSchema.parse(values);
@@ -19,6 +21,16 @@ export async function createProductAction(values: ProductFormValues) {
   }
 }
 
+/**
+ * TẠO MỚI SẢN PHẨM (Dạng chuyển tiếp bí danh)
+ */
+export async function createProduct(values: ProductFormValues) {
+  return createProductAction(values);
+}
+
+/**
+ * CẬP NHẬT SẢN PHẨM (Dạng Action đầy đủ)
+ */
 export async function updateProductAction(id: string, values: Partial<ProductFormValues>) {
   try {
     const data = await productRepo.updateProduct(id, values as unknown as ProductUpdate);
@@ -30,6 +42,16 @@ export async function updateProductAction(id: string, values: Partial<ProductFor
   }
 }
 
+/**
+ * CẬP NHẬT SẢN PHẨM (Dạng chuyển tiếp bí danh)
+ */
+export async function updateProduct(id: string, values: Partial<ProductFormValues>) {
+  return updateProductAction(id, values);
+}
+
+/**
+ * XÓA SẢN PHẨM (Dạng Action đầy đủ)
+ */
 export async function deleteProductAction(id: string) {
   try {
     await productRepo.deleteProduct(id);
@@ -41,6 +63,64 @@ export async function deleteProductAction(id: string) {
   }
 }
 
+/**
+ * XÓA SẢN PHẨM (Dạng chuyển tiếp bí danh)
+ */
+export async function deleteProduct(id: string) {
+  return deleteProductAction(id);
+}
+
+/**
+ * THAY ĐỔI TRẠNG THÁI CÔNG KHAI (Dạng Action đầy đủ)
+ */
+export async function togglePublishedAction(id: string, published: boolean) {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("products").update({ published }).eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/dashboard/products");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * THAY ĐỔI TRẠNG THÁI CÔNG KHAI (Dạng chuyển tiếp bí danh)
+ */
+export async function togglePublished(id: string, published: boolean) {
+  return togglePublishedAction(id, published);
+}
+
+/**
+ * THAY ĐỔI TRẠNG THÁI NỔI BẬT (Dạng Action đầy đủ)
+ */
+export async function toggleFeaturedAction(id: string, featured: boolean) {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("products").update({ featured }).eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/dashboard/products");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * THAY ĐỔI TRẠNG THÁI NỔI BẬT (Dạng chuyển tiếp bí danh)
+ */
+export async function toggleFeatured(id: string, featured: boolean) {
+  return toggleFeaturedAction(id, featured);
+}
+
+/**
+ * TẢI ẢNH LÊN BUCKET 'product-images'
+ */
 export async function uploadProductImage(formData: FormData) {
   try {
     const supabase = await createClient();
@@ -50,7 +130,13 @@ export async function uploadProductImage(formData: FormData) {
     const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}`;
     const filePath = `products/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, buffer, {
+      contentType: file.type,
+    });
+
     if (uploadError) throw uploadError;
 
     const {

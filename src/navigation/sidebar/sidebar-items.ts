@@ -60,33 +60,33 @@ export interface NavGroup {
 
 export const sidebarItems: NavGroup[] = [
   // ==========================================================
-  // DASHBOARD
+  // BẢNG ĐIỀU KHIỂN (DASHBOARD)
   // ==========================================================
   {
     id: 1,
-    label: "Dashboard",
+    label: "Bảng điều khiển",
     items: [
       {
         id: "overview",
-        title: "Overview",
+        title: "Tổng quan",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
       {
         id: "ecommerce",
-        title: "Ecommerce",
+        title: "Thương mại",
         url: "/dashboard/ecommerce",
         icon: ShoppingBag,
       },
       {
         id: "analytics",
-        title: "Analytics",
+        title: "Phân tích truy cập",
         url: "/dashboard/analytics",
         icon: Gauge,
       },
       {
         id: "finance",
-        title: "Finance",
+        title: "Tài chính",
         url: "/dashboard/finance",
         icon: Banknote,
       },
@@ -94,15 +94,15 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // SALES
+  // BÁN HÀNG (SALES)
   // ==========================================================
   {
     id: 2,
-    label: "Sales",
+    label: "Kinh doanh",
     items: [
       {
         id: "orders",
-        title: "Orders",
+        title: "Đơn hàng",
         url: "/dashboard/orders",
         icon: ReceiptText,
         badge: "new",
@@ -111,31 +111,32 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // CATALOG
+  // DANH MỤC (CATALOG)
   // ==========================================================
   {
     id: 3,
-    label: "Catalog",
+    label: "Danh mục",
     items: [
       {
         id: "catalog",
-        title: "Catalog",
+        title: "Phân loại kho",
         icon: Package,
         subItems: [
           {
             id: "products",
-            title: "Products",
+            title: "Sản phẩm",
             url: "/dashboard/products",
+            icon: Package, // Biểu tượng hiển thị cho mục Sản phẩm [1.1]
           },
           {
             id: "categories",
-            title: "Categories",
+            title: "Nhóm danh mục",
             url: "/dashboard/categories",
             icon: FolderTree,
           },
           {
             id: "brands",
-            title: "Brands",
+            title: "Thương hiệu",
             url: "/dashboard/brands",
             icon: Building2,
           },
@@ -145,21 +146,21 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // CUSTOMERS
+  // KHÁCH HÀNG (CUSTOMERS)
   // ==========================================================
   {
     id: 4,
-    label: "Customers",
+    label: "Khách hàng",
     items: [
       {
         id: "users",
-        title: "Users",
+        title: "Thành viên",
         url: "/dashboard/users",
         icon: Users,
       },
       {
         id: "crm",
-        title: "CRM",
+        title: "Quản lý cơ hội (CRM)",
         url: "/dashboard/crm",
         icon: ChartBar,
       },
@@ -167,40 +168,40 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // OPERATIONS
+  // VẬN HÀNH (OPERATIONS)
   // ==========================================================
   {
     id: 5,
-    label: "Operations",
+    label: "Vận hành",
     items: [
       {
         id: "logistics",
-        title: "Logistics",
+        title: "Vận chuyển",
         url: "/dashboard/logistics",
         icon: Forklift,
       },
       {
         id: "calendar",
-        title: "Calendar",
+        title: "Lịch trình xưởng",
         url: "/dashboard/calendar",
         icon: Calendar,
       },
       {
         id: "kanban",
-        title: "Kanban",
+        title: "Bảng kéo thả (Kanban)",
         url: "/dashboard/kanban",
         icon: Kanban,
       },
       {
         id: "tasks",
-        title: "Tasks",
+        title: "Nhiệm vụ",
         url: "/dashboard/tasks",
         icon: CheckSquare,
         badge: "new",
       },
       {
         id: "productivity",
-        title: "Productivity",
+        title: "Hiệu suất công việc",
         url: "/dashboard/productivity",
         icon: ListTodo,
       },
@@ -208,21 +209,21 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // COMMUNICATION
+  // TƯƠNG TÁC (COMMUNICATION)
   // ==========================================================
   {
     id: 6,
-    label: "Communication",
+    label: "Tương tác",
     items: [
       {
         id: "mail",
-        title: "Mail",
+        title: "Hòm thư chung",
         url: "/dashboard/mail",
         icon: Mail,
       },
       {
         id: "chat",
-        title: "Chat",
+        title: "Trò chuyện",
         url: "/dashboard/chat",
         icon: MessageSquare,
       },
@@ -230,15 +231,15 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // SYSTEM
+  // HỆ THỐNG (SYSTEM)
   // ==========================================================
   {
     id: 7,
-    label: "System",
+    label: "Cấu hình hệ thống",
     items: [
       {
         id: "roles",
-        title: "Roles",
+        title: "Phân quyền & Vai trò",
         url: "/dashboard/roles",
         icon: Lock,
       },

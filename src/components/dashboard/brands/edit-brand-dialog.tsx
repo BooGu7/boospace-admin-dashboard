@@ -1,10 +1,10 @@
 "use client";
 
-import { Building2, Loader2, Plus, UploadCloud, X } from "lucide-react";
+import { Edit, Loader2, UploadCloud, X } from "lucide-react";
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createBrandAction, uploadBrandLogo } from "@/actions/brand.actions";
+import { updateBrandAction, uploadBrandLogo } from "@/actions/brand.actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,12 +19,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export function CreateBrandDialog() {
+interface Props {
+  brand: any;
+}
+
+export function EditBrandDialog({ brand }: Props) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [website, setWebsite] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [active, setActive] = useState(true);
+  const [name, setName] = useState(brand.name || "");
+  const [website, setWebsite] = useState(brand.website || "");
+  const [logoUrl, setLogoUrl] = useState(brand.logo_url || "");
+  const [active, setActive] = useState(brand.active !== false);
   const [isUploading, setIsUploading] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -38,7 +42,7 @@ export function CreateBrandDialog() {
       formData.append("file", file);
       const url = await uploadBrandLogo(formData);
       setLogoUrl(url);
-      toast.success("Tải logo thành công");
+      toast.success("Cập nhật logo thành công");
     } catch (err: any) {
       toast.error("Lỗi khi tải ảnh: " + err.message);
     } finally {
@@ -53,7 +57,7 @@ export function CreateBrandDialog() {
     }
 
     startTransition(async () => {
-      const result = await createBrandAction({
+      const result = await updateBrandAction(brand.id, {
         name,
         logo_url: logoUrl || null,
         website: website || null,
@@ -61,15 +65,10 @@ export function CreateBrandDialog() {
       });
 
       if (result.success) {
-        toast.success("Thêm thương hiệu thành công");
+        toast.success("Cập nhật thương hiệu thành công");
         setOpen(false);
-        // Reset lại form
-        setName("");
-        setWebsite("");
-        setLogoUrl("");
-        setActive(true);
       } else {
-        toast.error(result.error || "Không thể thêm thương hiệu");
+        toast.error(result.error || "Không thể cập nhật thương hiệu");
       }
     });
   };
@@ -77,14 +76,14 @@ export function CreateBrandDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black">
-          <Plus className="h-4 w-4" /> Thêm thương hiệu
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-black">
+          <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Tạo thương hiệu mới</DialogTitle>
-          <DialogDescription>Nhập thông tin đối tác cung cấp hoặc nhãn sản xuất của bạn.</DialogDescription>
+          <DialogTitle>Chỉnh sửa thương hiệu</DialogTitle>
+          <DialogDescription>Cập nhật lại các thông tin chi tiết cho thương hiệu đối tác.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -121,11 +120,11 @@ export function CreateBrandDialog() {
 
           {/* Tên thương hiệu */}
           <div className="space-y-2">
-            <Label htmlFor="brand-name" className="text-sm font-semibold">
+            <Label htmlFor="edit-brand-name" className="text-sm font-semibold">
               Tên thương hiệu
             </Label>
             <Input
-              id="brand-name"
+              id="edit-brand-name"
               placeholder="Ví dụ: Prusa, Creality, Bambu Lab..."
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -135,11 +134,11 @@ export function CreateBrandDialog() {
 
           {/* Website */}
           <div className="space-y-2">
-            <Label htmlFor="brand-website" className="text-sm font-semibold">
+            <Label htmlFor="edit-brand-website" className="text-sm font-semibold">
               Trang chủ đối tác (Tùy chọn)
             </Label>
             <Input
-              id="brand-website"
+              id="edit-brand-website"
               type="url"
               placeholder="https://example.com"
               value={website}
@@ -152,7 +151,7 @@ export function CreateBrandDialog() {
           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
             <div className="space-y-0.5">
               <Label className="text-sm font-semibold">Đang hợp tác</Label>
-              <p className="text-xs text-muted-foreground">Hiển thị các sản phẩm thuộc nhãn hiệu này.</p>
+              <p className="text-xs text-muted-foreground">Kích hoạt để hiển thị các sản phẩm thuộc nhãn hiệu này.</p>
             </div>
             <Switch checked={active} onCheckedChange={setActive} disabled={pending} />
           </div>
@@ -168,7 +167,7 @@ export function CreateBrandDialog() {
             className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black"
           >
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Lưu thương hiệu
+            Lưu thay đổi
           </Button>
         </DialogFooter>
       </DialogContent>

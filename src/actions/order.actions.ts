@@ -40,7 +40,7 @@ export async function getOrders(params: GetOrdersParams): Promise<GetOrdersRespo
 }
 
 /**
- * ACTION CẬP NHẬT TRẠNG THÁI & GỬI EMAIL HÓA ĐƠN QUA RESEND [21]
+ * ACTION CẬP NHẬT TRẠNG THÁI & GỬI EMAIL HÓA ĐƠN QUA RESEND
  */
 export async function updateOrderStatusAction(id: string, status: string) {
   try {
@@ -51,7 +51,7 @@ export async function updateOrderStatusAction(id: string, status: string) {
 
     if (updateError) throw updateError;
 
-    // 2. Nếu chuyển sang "Confirmed", tự động kích hoạt gửi Email hóa đơn [21]
+    // 2. Nếu chuyển sang "Confirmed", tự động kích hoạt gửi Email hóa đơn
     if (status === "Confirmed") {
       const { getOrderWithDetails } = await import("@/lib/repositories/order.repository");
       const order = await getOrderWithDetails(id);
@@ -91,10 +91,9 @@ export async function deleteOrderAction(id: string) {
 }
 
 /**
- * HÀM PHỤ TRỢ: SOẠN VÀ GỬI EMAIL QUA RESEND HTTP API [21]
+ * HÀM PHỤ TRỢ: SOẠN VÀ GỬI EMAIL QUA RESEND HTTP API
  */
 async function sendInvoiceEmail(order: any) {
-  // Ưu tiên lấy Key từ biến môi trường của bạn
   const resendApiKey = process.env.RESEND_API_KEY || "re_3cz1Z9tS_FQtmoNAQAF7STG1XrCH3mwHA";
 
   const formatVND = (val: number) =>
@@ -103,7 +102,6 @@ async function sendInvoiceEmail(order: any) {
       currency: "VND",
     }).format(val);
 
-  // Tạo danh sách sản phẩm dạng bảng cho Email
   const itemsHtml =
     order.order_items
       ?.map(
@@ -123,7 +121,6 @@ async function sendInvoiceEmail(order: any) {
       )
       .join("") || "";
 
-  // Giao diện Email HTML cao cấp phong cách tối giản
   const emailHtml = `
     <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f7fafc; padding-bottom: 20px;">
@@ -169,7 +166,6 @@ async function sendInvoiceEmail(order: any) {
     </div>
   `;
 
-  // Gửi email qua API Resend
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -177,7 +173,7 @@ async function sendInvoiceEmail(order: any) {
       Authorization: `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: "Boospace <onboarding@resend.dev>", // Tên thương hiệu hiển thị
+      from: "Boospace <onboarding@resend.dev>",
       to: order.customerEmail,
       subject: `[Boospace] Xác nhận đơn hàng #${order.code} thành công!`,
       html: emailHtml,
