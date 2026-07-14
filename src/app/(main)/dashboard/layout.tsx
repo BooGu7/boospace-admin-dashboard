@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation"; // <- Thêm dòng này để định nghĩa hàm redirect
 import type { ReactNode } from "react";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 // NHẬP KHẨU BỘ LẮNG NGHE ĐƠN HÀNG THỜI GIAN THỰC [1.1]
 import { RealtimeListener } from "@/components/dashboard/realtime-listener";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
@@ -23,6 +23,11 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Kiểm tra đăng nhập và chuyển hướng nếu chưa có session
+  if (!user) {
+    redirect("/auth/v2/login");
+  }
+
   const sidebarUser = {
     name:
       `${user?.user_metadata?.firstName ?? ""} ${user?.user_metadata?.lastName ?? ""}`.trim() ||
@@ -34,9 +39,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     avatar: user?.user_metadata?.avatar_url ?? "",
   };
 
-  if (!user) {
-    redirect("/auth/v2/login");
-  }
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const [variant, collapsible] = await Promise.all([
@@ -89,7 +91,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <div className="flex items-center gap-2">
                 <LayoutControls />
                 <ThemeSwitcher />
-                {/* Đã lược bỏ hoàn toàn nút bấm Github để làm trống không gian thanh điều hướng [1.1] */}
               </div>
             </div>
           </header>

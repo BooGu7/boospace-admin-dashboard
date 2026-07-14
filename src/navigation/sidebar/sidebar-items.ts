@@ -1,5 +1,7 @@
 import {
+  BadgePercent, // Thêm icon Mã giảm giá
   Banknote,
+  Boxes, // Thêm icon Tồn kho
   Building2,
   Calendar,
   ChartBar,
@@ -10,7 +12,6 @@ import {
   Kanban,
   LayoutDashboard,
   ListTodo,
-  Lock,
   type LucideIcon,
   Mail,
   MessageSquare,
@@ -94,7 +95,7 @@ export const sidebarItems: NavGroup[] = [
   },
 
   // ==========================================================
-  // BÁN HÀNG (SALES)
+  // BÁN HÀNG & KHUYẾN MÃI (SALES)
   // ==========================================================
   {
     id: 2,
@@ -107,11 +108,17 @@ export const sidebarItems: NavGroup[] = [
         icon: ReceiptText,
         badge: "new",
       },
+      {
+        id: "coupons",
+        title: "Mã giảm giá (Coupons)",
+        url: "/dashboard/coupons",
+        icon: BadgePercent,
+      },
     ],
   },
 
   // ==========================================================
-  // DANH MỤC (CATALOG)
+  // DANH MỤC & KHO HÀNG (CATALOG)
   // ==========================================================
   {
     id: 3,
@@ -126,7 +133,13 @@ export const sidebarItems: NavGroup[] = [
             id: "products",
             title: "Sản phẩm",
             url: "/dashboard/products",
-            icon: Package, // Biểu tượng hiển thị cho mục Sản phẩm [1.1]
+            icon: Package,
+          },
+          {
+            id: "inventory",
+            title: "Tồn kho xưởng in",
+            url: "/dashboard/inventory",
+            icon: Boxes,
           },
           {
             id: "categories",
@@ -226,22 +239,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Trò chuyện",
         url: "/dashboard/chat",
         icon: MessageSquare,
-      },
-    ],
-  },
-
-  // ==========================================================
-  // HỆ THỐNG (SYSTEM)
-  // ==========================================================
-  {
-    id: 7,
-    label: "Cấu hình hệ thống",
-    items: [
-      {
-        id: "roles",
-        title: "Phân quyền & Vai trò",
-        url: "/dashboard/roles",
-        icon: Lock,
       },
     ],
   },

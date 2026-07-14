@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Loader2, Plus, UploadCloud, X } from "lucide-react";
+import { Loader2, Plus, UploadCloud, X } from "lucide-react";
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ export function CreateBrandDialog() {
       setLogoUrl(url);
       toast.success("Tải logo thành công");
     } catch (err: any) {
-      toast.error("Lỗi khi tải ảnh: " + err.message);
+      toast.error(`Lỗi khi tải ảnh: ${err.message}`);
     } finally {
       setIsUploading(false);
     }

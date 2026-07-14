@@ -42,7 +42,7 @@ export function LoginForm() {
       setLoading(true);
 
       // Xác thực đăng nhập qua Supabase Auth [21]
-      const { error, data } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: values.email.trim(),
         password: values.password,
       });
@@ -59,7 +59,7 @@ export function LoginForm() {
 
       // Tiến hành chuyển hướng về trang chủ mặc định của dashboard quản trị [21]
       router.push("/dashboard/default");
-    } catch (e) {
+    } catch (_e) {
       toast.error("Đã xảy ra lỗi ngoài ý muốn.");
     } finally {
       setLoading(false);

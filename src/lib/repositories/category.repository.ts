@@ -12,12 +12,14 @@ export interface CategoryInput {
 
 export async function getCategories() {
   const supabase = await createClient();
+
+  // 1. Cố gắng truy vấn nối bảng đệ quy bằng cách chỉ định rõ khóa tự liên kết categories!categories_parent_id_fkey
   const { data, error } = await supabase
     .from("categories")
     .select(
       `
       *,
-      parent:parent_id (
+      parent:categories!categories_parent_id_fkey (
         id,
         name
       )
@@ -26,10 +28,24 @@ export async function getCategories() {
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
+  // 2. Nếu có lỗi xung đột ràng buộc, tự động kích hoạt chế độ dự phòng tải danh mục phẳng (Frontend vẫn tự ghép được cha-con)
   if (error) {
-    console.error("[GET_CATEGORIES_ERROR]", error);
-    throw new Error(error.message);
+    console.warn("[GET_CATEGORIES_WARN] Đang kích hoạt truy vấn danh mục dự phòng (không lồng bảng):", error.message);
+
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (fallbackError) {
+      console.error("[GET_CATEGORIES_FALLBACK_ERROR]", fallbackError);
+      throw new Error(fallbackError.message);
+    }
+
+    return fallbackData;
   }
+
   return data;
 }
 

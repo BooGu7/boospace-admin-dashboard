@@ -10,7 +10,7 @@ const nextConfig = {
     },
   },
   images: {
-    dangerouslyAllowSVG: true, // Kích hoạt hiển thị tệp vector mẫu SVG an toàn [21]
+    dangerouslyAllowSVG: true, // Kích hoạt hiển thị tệp vector mẫu SVG an toàn
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandboxed;",
     remotePatterns: [
@@ -31,6 +31,17 @@ const nextConfig = {
       {
         source: "/dashboard",
         destination: "/dashboard/default",
+        permanent: false,
+      },
+      // BỔ SUNG: Tự động chuyển hướng các đường dẫn cũ về thư mục con tương ứng của dashboard
+      {
+        source: "/mail",
+        destination: "/dashboard/mail",
+        permanent: false,
+      },
+      {
+        source: "/chat",
+        destination: "/dashboard/chat",
         permanent: false,
       },
     ];

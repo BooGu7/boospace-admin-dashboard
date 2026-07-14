@@ -44,7 +44,7 @@ export function EditBrandDialog({ brand }: Props) {
       setLogoUrl(url);
       toast.success("Cập nhật logo thành công");
     } catch (err: any) {
-      toast.error("Lỗi khi tải ảnh: " + err.message);
+      toast.error(`Lỗi khi tải ảnh: ${err.message}`);
     } finally {
       setIsUploading(false);
     }

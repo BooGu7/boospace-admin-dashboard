@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, EllipsisVertical, LogOut, PenLine, Settings2, UserPlus, UsersRound } from "lucide-react";
+import { Check, EllipsisVertical, LogOut, Mail, PenLine, Settings2, UserPlus, UsersRound } from "lucide-react";
 import * as React from "react";
-
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,8 +10,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -32,12 +30,71 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn, getInitials } from "@/lib/utils";
 
-import { accounts, type MailNavItem, mailNavigation } from "./data";
+import { type MailNavItem, mailNavigation } from "./data";
 
 export function MailSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const [selectedAccount, setSelectedAccount] = React.useState(accounts[0]);
+
+  const [gmailToken, setGmailToken] = React.useState<string | null>(null);
+
+  // Khởi tạo tài khoản Admin hiển thị góc trái
+  const [selectedAccount, setSelectedAccount] = React.useState({
+    id: 1,
+    label: "Admin BooSpace",
+    email: "admin@boospace.tech",
+  });
+
+  // Đọc thông tin tài khoản thật sau khi kết nối trực tiếp Google thành công
+  React.useEffect(() => {
+    const token = localStorage.getItem("gmail_access_token");
+    const savedEmail = localStorage.getItem("gmail_user_email");
+    const savedName = localStorage.getItem("gmail_user_name");
+
+    if (token) {
+      setGmailToken(token);
+      if (savedEmail && savedName) {
+        setSelectedAccount({
+          id: 1,
+          label: savedName,
+          email: savedEmail,
+        });
+      }
+    }
+  }, []);
+
+  // KHỞI CHẠY GOOGLE OAUTH TRỰC TIẾP VỚI MÃ CLIENT ID THẬT CỦA BẠN
+  const handleGoogleConnect = () => {
+    const clientId = "1084942096128-hpq2p90osdrhvmk6hhf8a4m5vgfv404f.apps.googleusercontent.com"; // ĐỒNG BỘ: Mã Client ID thật trên Supabase Console của bạn
+    const redirectUri = `${window.location.origin}/dashboard/mail`;
+    const scope =
+      "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.readonly";
+
+    const oauthUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=token` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&prompt=consent` +
+      `&state=google_direct`;
+
+    window.location.href = oauthUrl;
+  };
+
+  const handleGoogleDisconnect = () => {
+    localStorage.removeItem("gmail_access_token");
+    localStorage.removeItem("gmail_user_email");
+    localStorage.removeItem("gmail_user_name");
+    setGmailToken(null);
+    setSelectedAccount({
+      id: 1,
+      label: "Admin BooSpace",
+      email: "admin@boospace.tech",
+    });
+    toast.success("Đã ngắt kết nối Gmail thành công!");
+    window.location.reload();
+  };
 
   return (
     <Sidebar collapsible="icon" className="absolute inset-y-0 h-full **:data-[sidebar=sidebar]:bg-background">
@@ -56,37 +113,23 @@ export function MailSidebar() {
                 </Button>
               </DropdownMenuTrigger>
               <AccountMenuContent
-                selectedAccountId={selectedAccount.id}
-                onSelectAccount={setSelectedAccount}
+                selectedAccount={selectedAccount}
                 showAccounts
                 side="right"
                 align="start"
+                onDisconnect={handleGoogleDisconnect}
               />
             </DropdownMenu>
           ) : (
             <>
-              <ToggleGroup
-                type="single"
-                value={String(selectedAccount.id)}
-                onValueChange={(value) => {
-                  const account = accounts.find((item) => item.id === Number(value));
-
-                  if (account) {
-                    setSelectedAccount(account);
-                  }
-                }}
-                spacing={2}
-              >
-                {accounts.map((account) => (
-                  <ToggleGroupItem
-                    key={account.id}
-                    className={accountTriggerClassName}
-                    value={String(account.id)}
-                    aria-label={`Select ${account.label}`}
-                  >
-                    <AccountMarker account={account} />
-                  </ToggleGroupItem>
-                ))}
+              <ToggleGroup type="single" value={String(selectedAccount.id)} spacing={2}>
+                <ToggleGroupItem
+                  className={accountTriggerClassName}
+                  value={String(selectedAccount.id)}
+                  aria-label={`Select ${selectedAccount.label}`}
+                >
+                  <AccountMarker account={selectedAccount} />
+                </ToggleGroupItem>
               </ToggleGroup>
 
               <DropdownMenu>
@@ -95,7 +138,7 @@ export function MailSidebar() {
                     <EllipsisVertical />
                   </Button>
                 </DropdownMenuTrigger>
-                <AccountMenuContent selectedAccountId={selectedAccount.id} onSelectAccount={setSelectedAccount} />
+                <AccountMenuContent selectedAccount={selectedAccount} onDisconnect={handleGoogleDisconnect} />
               </DropdownMenu>
             </>
           )}
@@ -104,14 +147,37 @@ export function MailSidebar() {
         <Separator />
 
         <div className="flex flex-col gap-1.5 group-data-[state=collapsed]:hidden">
-          <div className="font-medium text-sm leading-none">{selectedAccount.label}</div>
+          <div className="font-bold text-sm leading-none">{selectedAccount.label}</div>
           <div className="truncate text-muted-foreground text-sm leading-none">{selectedAccount.email}</div>
         </div>
 
+        {/* NÚT SOẠN THƯ */}
         <Button size={isCollapsed ? "icon-sm" : "sm"} variant="outline" className="group-data-[state=expanded]:w-full">
           <PenLine data-icon="inline-start" />
           <span className="group-data-[state=collapsed]:hidden">New email</span>
         </Button>
+
+        {/* NÚT ĐĂNG NHẬP GMAIL GOOGLE OAUTH TRỰC TIẾP */}
+        {gmailToken ? (
+          <Button
+            size={isCollapsed ? "icon-sm" : "sm"}
+            variant="outline"
+            className="group-data-[state=expanded]:w-full border-red-500/20 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs gap-1.5"
+            onClick={handleGoogleDisconnect}
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="group-data-[state=collapsed]:hidden">Disconnect Gmail</span>
+          </Button>
+        ) : (
+          <Button
+            size={isCollapsed ? "icon-sm" : "sm"}
+            className="group-data-[state=expanded]:w-full bg-red-600 hover:bg-red-700 text-white font-black text-xs gap-1.5"
+            onClick={handleGoogleConnect}
+          >
+            <Mail className="h-3.5 w-3.5" />
+            <span className="group-data-[state=collapsed]:hidden">Connect Gmail (OAuth)</span>
+          </Button>
+        )}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -150,9 +216,7 @@ const accountTriggerClassName = cn(
   "focus-visible:border-transparent focus-visible:ring-0",
 );
 
-type Account = (typeof accounts)[number];
-
-function AccountMarker({ account, isSelected = false }: { account: Account; isSelected?: boolean }) {
+function AccountMarker({ account, isSelected = false }: { account: any; isSelected?: boolean }) {
   return (
     <>
       {getInitials(account.label).slice(0, 1)}
@@ -169,14 +233,14 @@ function AccountMarker({ account, isSelected = false }: { account: Account; isSe
 }
 
 function AccountMenuContent({
-  selectedAccountId,
-  onSelectAccount,
+  selectedAccount,
   showAccounts = false,
+  onDisconnect,
   ...props
 }: {
-  selectedAccountId: number;
-  onSelectAccount: (account: Account) => void;
+  selectedAccount: any;
   showAccounts?: boolean;
+  onDisconnect: () => void;
 } & Pick<React.ComponentProps<typeof DropdownMenuContent>, "align" | "side">) {
   return (
     <DropdownMenuContent className="w-56" {...props}>
@@ -184,25 +248,10 @@ function AccountMenuContent({
         <>
           <DropdownMenuLabel>Accounts</DropdownMenuLabel>
           <DropdownMenuGroup>
-            <DropdownMenuRadioGroup
-              value={String(selectedAccountId)}
-              onValueChange={(value) => {
-                const account = accounts.find((item) => item.id === Number(value));
-
-                if (account) {
-                  onSelectAccount(account);
-                }
-              }}
-            >
-              {accounts.map((account) => (
-                <DropdownMenuRadioItem key={account.id} value={String(account.id)}>
-                  <div className="flex min-w-0 flex-col">
-                    <span>{account.label}</span>
-                    <span className="truncate text-muted-foreground text-xs">{account.email}</span>
-                  </div>
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
+            <div className="flex min-w-0 flex-col px-2 py-1.5 bg-muted/40 rounded-sm">
+              <span className="font-bold text-xs">{selectedAccount.label}</span>
+              <span className="truncate text-muted-foreground text-[10px]">{selectedAccount.email}</span>
+            </div>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
         </>
@@ -223,7 +272,7 @@ function AccountMenuContent({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={onDisconnect}>
           <LogOut />
           Sign out
         </DropdownMenuItem>

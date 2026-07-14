@@ -1,9 +1,7 @@
 import { create } from "zustand";
 
-import { type Conversation, conversations } from "./data";
-
 type Config = {
-  selected: Conversation["id"] | null;
+  selected: string | number | null;
 };
 
 type ChatStore = {
@@ -13,7 +11,7 @@ type ChatStore = {
 
 const useChatStore = create<ChatStore>((set) => ({
   chat: {
-    selected: conversations[0].id,
+    selected: null,
   },
   setChat: (chat) => set({ chat }),
 }));

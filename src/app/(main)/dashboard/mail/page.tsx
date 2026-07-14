@@ -1,26 +1,50 @@
-import { ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import type { Mail } from "./_components/data";
+import { MailComponent } from "./_components/mail";
+import { DEFAULT_MAIL_LAYOUT, MAIL_LAYOUT_COOKIE } from "./_components/mail-layout-config";
 
-import { Button } from "@/components/ui/button";
+export const revalidate = 0; // Đảm bảo luôn lấy danh sách mới nhất khi F5
 
-export default function Page() {
+export default async function MailPage() {
+  const cookieStore = await cookies();
+  const layoutCookie = cookieStore.get(MAIL_LAYOUT_COOKIE);
+
+  const supabase = await createClient();
+
+  // 1. Tải thư liên hệ thực tế từ bảng contact_messages trên Supabase của bạn
+  const { data: dbMessages } = await supabase
+    .from("contact_messages")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  const dbMails: Mail[] = (dbMessages || []).map((msg) => ({
+    id: msg.id,
+    accountId: 1,
+    from: {
+      name: msg.name || "Khách vãng lai",
+      email: msg.email || "Chưa cung cấp Email",
+    },
+    to: [{ name: "Trọng Tôn", email: "boospace7@gmail.com" }],
+    subject: msg.subject || "Yêu cầu liên hệ Boo Space Store",
+    body: msg.message || "",
+    receivedAt: msg.created_at,
+    folder: "inbox" as const,
+    isRead: false,
+    isPinned: false,
+    isPriority: true,
+    labels: ["Web Store"],
+  }));
+
+  // 2. Chỉ chuyển tiếp dữ liệu thật (Không sử dụng dữ liệu mẫu tĩnh)
+  const finalMails = [...dbMails];
+
   return (
-    <div className="flex h-full flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="font-medium text-sm leading-none">Mail preview</h1>
-          <p className="text-muted-foreground text-sm">
-            This iframe shows the standalone mail screen. Open it in full screen for a better view.
-          </p>
-        </div>
-        <Button asChild variant="ghost" size="icon-sm">
-          <Link href="/mail" target="_blank" rel="noreferrer" aria-label="Open mail in new tab">
-            <ExternalLink />
-          </Link>
-        </Button>
-      </div>
-
-      <iframe src="/mail" title="Mail preview" className="min-h-0 flex-1 rounded-lg border bg-background" />
+    <div className="h-[calc(100vh-140px)] min-h-0 overflow-hidden bg-background">
+      <MailComponent
+        mails={finalMails}
+        defaultLayout={layoutCookie ? JSON.parse(layoutCookie.value) : [...DEFAULT_MAIL_LAYOUT]}
+      />
     </div>
   );
 }

@@ -28,7 +28,7 @@ export function GoogleButton({ className }: GoogleButtonProps) {
       if (error) {
         toast.error(`Lỗi đăng nhập Google: ${error.message}`);
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Không thể kết nối dịch vụ xác thực Google.");
     } finally {
       setLoading(false);

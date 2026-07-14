@@ -61,7 +61,7 @@ export function RegisterForm() {
 
       // Chuyển hướng về trang đăng nhập v2 để người dùng tiến hành đăng nhập [21]
       router.push("/auth/v2/login");
-    } catch (e) {
+    } catch (_e) {
       toast.error("Đã xảy ra lỗi kết nối trong quá trình đăng ký.");
     } finally {
       setLoading(false);

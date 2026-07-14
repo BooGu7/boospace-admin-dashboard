@@ -46,7 +46,7 @@ export function EditCategoryDialog({ category, categories }: Props) {
       setImageUrl(url);
       toast.success("Cập nhật hình ảnh thành công");
     } catch (err: any) {
-      toast.error("Lỗi khi tải ảnh: " + err.message);
+      toast.error(`Lỗi khi tải ảnh: ${err.message}`);
     } finally {
       setIsUploading(false);
     }

@@ -29,7 +29,7 @@ export function Chat({ conversations }: ChatProps) {
   return (
     <>
       <div
-        className="grid h-[calc(100svh-var(--header-height))] min-h-0 min-w-0 flex-1 grid-cols-1 overflow-hidden shadow-sm transition-[grid-template-columns] duration-300 ease-out *:min-h-0 *:min-w-0 md:grid-cols-[22.5rem_minmax(0,1fr)] md:*:first:border-r lg:grid-cols-[22.5rem_minmax(0,1fr)_var(--profile-width)]"
+        className="grid h-full min-h-0 min-w-0 flex-1 grid-cols-1 overflow-hidden shadow-sm transition-[grid-template-columns] duration-300 ease-out *:min-h-0 *:min-w-0 md:grid-cols-[22.5rem_minmax(0,1fr)] md:*:first:border-r lg:grid-cols-[22.5rem_minmax(0,1fr)_var(--profile-width)]" // ĐÃ SỬA: Chuyển h-[calc(...)] thành h-full
         style={
           {
             "--profile-width": showContact ? "20rem" : "0rem",

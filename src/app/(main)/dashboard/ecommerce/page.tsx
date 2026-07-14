@@ -3,9 +3,9 @@ import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-// IMPORT HÀM TRUY VẤN TÀI CHÍNH BÁN LẺ
 import { getEcommerceDashboardStats } from "@/lib/repositories/order.repository";
-// IMPORT CÁC COMPONENT CON CỦA BẠN
+
+// Nhập khẩu các thành phần giao diện của bạn
 import { CustomerReviews } from "./_components/customer-reviews";
 import { Inventory } from "./_components/inventory";
 import { KpiStrip } from "./_components/kpi-strip";
@@ -14,48 +14,48 @@ import { StoreTraffic } from "./_components/store-traffic";
 import { TopProducts } from "./_components/top-products";
 import { TrafficSources } from "./_components/traffic-sources";
 
-export const revalidate = 0; // Luôn làm mới dữ liệu khi F5
+export const revalidate = 0; // Luôn lấy dữ liệu mới nhất thời gian thực từ Supabase
 
 export default async function Page() {
   const formattedDate = format(new Date(), "EEEE, do MMMM yyyy");
 
-  // Lấy dữ liệu thật từ Supabase
+  // Truy vấn dữ liệu thực tế kết hợp tự động giả định (Fallback Mock)
   const stats = await getEcommerceDashboardStats();
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl leading-none tracking-tight">Store Overview</h1>
+          <h1 className="text-3xl font-extrabold leading-none tracking-tight">Tổng quan cửa hàng</h1>
           <p className="text-muted-foreground text-sm">{formattedDate}</p>
         </div>
 
         <div className="flex flex-wrap items-end justify-end gap-2 lg:w-fit">
           <Select defaultValue="this-month">
             <SelectTrigger className="w-34" id="ecommerce-period" size="sm">
-              <SelectValue placeholder="This Month" />
+              <SelectValue placeholder="Tháng này" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="this-month">This Month</SelectItem>
-                <SelectItem value="last-month">Last Month</SelectItem>
-                <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-                <SelectItem value="year-to-date">Year to Date</SelectItem>
+                <SelectItem value="this-month">Tháng này</SelectItem>
+                <SelectItem value="last-month">Tháng trước</SelectItem>
+                <SelectItem value="last-30-days">30 ngày qua</SelectItem>
+                <SelectItem value="year-to-date">Từ đầu năm</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
 
           <Select defaultValue="all-channels">
             <SelectTrigger className="w-40" id="ecommerce-channel" size="sm">
-              <SelectValue placeholder="All Channels" />
+              <SelectValue placeholder="Tất cả nguồn" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="all-channels">All Channels</SelectItem>
-                <SelectItem value="online-store">Online Store</SelectItem>
-                <SelectItem value="marketplace">Marketplace</SelectItem>
-                <SelectItem value="social">Social</SelectItem>
-                <SelectItem value="retail">Retail</SelectItem>
+                <SelectItem value="all-channels">Tất cả nguồn</SelectItem>
+                <SelectItem value="online-store">Cửa hàng Web</SelectItem>
+                <SelectItem value="marketplace">Sàn TMĐT</SelectItem>
+                <SelectItem value="social">Mạng xã hội</SelectItem>
+                <SelectItem value="retail">Bán trực tiếp</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -69,7 +69,7 @@ export default async function Page() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        {/* KPI Strip & Sales Chart */}
+        {/* Bản đồ KPI tài chính thực tế & Biểu đồ doanh số 7 ngày gần nhất */}
         <KpiStrip stats={stats} />
 
         <div className="xl:col-span-5">
@@ -79,19 +79,18 @@ export default async function Page() {
           <TrafficSources />
         </div>
         <div className="xl:col-span-4">
-          <div className="xl:col-span-4">
-            <TopProducts topProducts={stats.topProducts} categories={stats.categoriesBreakdown} />
-          </div>
+          {/* Tỷ lệ đóng góp doanh thu theo ngành hàng thực tế */}
+          <TopProducts topProducts={stats.topProducts} categories={stats.categoriesBreakdown} />
         </div>
         <div className="xl:col-span-4">
-          {/* TRUYỀN DỮ LIỆU TỒN KHO THẬT VÀO BIỂU ĐỒ BÁN NGUYỆT */}
+          {/* Biểu đồ phân cấp tồn kho thực tế */}
           <Inventory data={stats.inventory} />
         </div>
         <div className="xl:col-span-4">
           <CustomerReviews />
         </div>
         <div className="xl:col-span-12">
-          {/* TRUYỀN DANH SÁCH 10 ĐƠN HÀNG GẦN ĐÂY THẬT VÀO BẢNG PHÂN TRANG */}
+          {/* Bảng giao dịch gần đây thực tế */}
           <RecentOrders data={stats.recentOrders} />
         </div>
       </div>
