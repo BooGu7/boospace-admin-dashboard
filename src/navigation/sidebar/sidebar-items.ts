@@ -106,7 +106,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Đơn hàng",
         url: "/dashboard/orders",
         icon: ReceiptText,
-        badge: "new",
       },
       {
         id: "coupons",
@@ -125,37 +124,30 @@ export const sidebarItems: NavGroup[] = [
     label: "Danh mục",
     items: [
       {
-        id: "catalog",
-        title: "Phân loại kho",
+        id: "products",
+        title: "Sản phẩm",
+        url: "/dashboard/products",
         icon: Package,
-        subItems: [
-          {
-            id: "products",
-            title: "Sản phẩm",
-            url: "/dashboard/products",
-            icon: Package,
-          },
-          {
-            id: "inventory",
-            title: "Tồn kho xưởng in",
-            url: "/dashboard/inventory",
-            icon: Boxes,
-          },
-          {
-            id: "categories",
-            title: "Nhóm danh mục",
-            url: "/dashboard/categories",
-            icon: FolderTree,
-          },
-          {
-            id: "brands",
-            title: "Thương hiệu",
-            url: "/dashboard/brands",
-            icon: Building2,
-          },
-        ],
       },
-    ],
+      {
+        id: "inventory",
+        title: "Tồn kho xưởng in",
+        url: "/dashboard/inventory",
+        icon: Boxes,
+      },
+      {
+        id: "categories",
+        title: "Nhóm danh mục",
+        url: "/dashboard/categories",
+        icon: FolderTree,
+      },
+      {
+        id: "brands",
+        title: "Thương hiệu",
+        url: "/dashboard/brands",
+        icon: Building2,
+      },
+    ], // ĐÃ SỬA: Loại bỏ ngoặc thừa giúp định dạng mảng mở đóng hoàn toàn chuẩn xác
   },
 
   // ==========================================================

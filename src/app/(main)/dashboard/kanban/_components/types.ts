@@ -1,20 +1,11 @@
-export type ColumnId = "ideas" | "planned" | "building" | "qa" | "shipped";
+export type ColumnId = string; // ĐÃ SỬA: Chuyển sang string để hỗ trợ thêm/xóa công đoạn in động từ Supabase
 
 export type Column = {
-  id: ColumnId;
+  id: string;
   title: string;
 };
 
-export type TaskTeam =
-  | "Backend"
-  | "Data"
-  | "Design"
-  | "Docs"
-  | "Finance Ops"
-  | "Platform"
-  | "Product"
-  | "QA"
-  | "Security";
+export type TaskTeam = string; // ĐÃ SỬA: Cho phép người dùng tự gõ thêm bớt nhóm phụ trách (Platform, Design...) tự do
 
 export type TaskPriority = "High" | "Medium" | "Low";
 
@@ -42,4 +33,4 @@ export type Task = {
   insights: TaskInsight[];
 };
 
-export type BoardState = Record<ColumnId, Task[]>;
+export type BoardState = Record<string, Task[]>; // ĐÃ SỬA: Cho phép lập chỉ mục linh hoạt bằng chuỗi id động từ Supabase
