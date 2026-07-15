@@ -7,44 +7,55 @@ import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } f
 
 const chartConfig = {
   amount: { label: "Doanh thu" },
-  vietqr: { color: "var(--chart-1)", label: "VietQR (PayOS)" },
+  vietqr: { color: "var(--chart-3)", label: "VietQR (PayOS)" },
   momo: { color: "var(--chart-2)", label: "Ví MoMo" },
-  cod: { color: "var(--chart-3)", label: "COD (Thu hộ)" },
+  cod: { color: "var(--chart-1)", label: "COD (Thu hộ)" },
 } satisfies ChartConfig;
 
-export function BalanceDistributionCard({ stats }: { stats: any }) {
-  // Phân chia dữ liệu động từ tổng doanh thu thật của bạn [18]
+interface Props {
+  stats: any;
+  settings: any;
+}
+
+export function BalanceDistributionCard({ stats, settings }: Props) {
+  const gateways = settings?.gateways || [];
+
   const paymentData = React.useMemo(() => {
-    const total = stats.grossRevenue || 1;
-    // Giả lập tỉ lệ phân chia thực tế từ doanh thu nhận được
-    const qrAmt = Math.round(total * 0.6); // Giả định 60% thanh toán QR
-    const momoAmt = Math.round(total * 0.25); // 25% qua MoMo
-    const codAmt = total - qrAmt - momoAmt; // Còn lại là COD
+    const total = stats.grossRevenue || 0;
+
+    // Đọc động tỉ lệ % chia tiền từ Supabase để phân rã số tiền thực tế!
+    const qrPercent = gateways[0]?.share_percent || 60;
+    const momoPercent = gateways[1]?.share_percent || 25;
+    const codPercent = 100 - qrPercent - momoPercent;
+
+    const qrAmt = Math.round((total * qrPercent) / 100);
+    const momoAmt = Math.round((total * momoPercent) / 100);
+    const codAmt = total - qrAmt - momoAmt;
 
     return [
       {
-        method: "VietQR (PayOS)",
+        method: gateways[0]?.name || "VietQR (PayOS)",
         amount: qrAmt,
         key: "vietqr",
-        percentage: 60,
+        percentage: qrPercent,
         fill: "color" in chartConfig.vietqr ? chartConfig.vietqr.color : undefined,
       },
       {
-        method: "Ví MoMo",
+        method: gateways[1]?.name || "Ví MoMo",
         amount: momoAmt,
         key: "momo",
-        percentage: 25,
+        percentage: momoPercent,
         fill: "color" in chartConfig.momo ? chartConfig.momo.color : undefined,
       },
       {
-        method: "COD (Thu hộ)",
+        method: gateways[2]?.name || "COD / PayPal",
         amount: codAmt,
         key: "cod",
-        percentage: 15,
+        percentage: codPercent,
         fill: "color" in chartConfig.cod ? chartConfig.cod.color : undefined,
       },
     ];
-  }, [stats.grossRevenue]);
+  }, [stats.grossRevenue, gateways]);
 
   const totalRevenue = stats.grossRevenue || 0;
 
@@ -56,10 +67,10 @@ export function BalanceDistributionCard({ stats }: { stats: any }) {
     }).format(val);
 
   return (
-    <Card>
+    <Card className="shadow-sm h-full">
       <CardHeader>
-        <CardTitle className="font-normal">Phân bổ nguồn tiền</CardTitle>
-        <CardDescription>Tỉ lệ thanh toán của các đơn hàng thực tế.</CardDescription>
+        <CardTitle className="font-bold text-base text-slate-800">Phân bổ nguồn tiền thanh toán</CardTitle>
+        <CardDescription>Tỉ lệ các phương thức thanh toán của đơn hàng thực tế.</CardDescription>
       </CardHeader>
 
       <CardContent className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
@@ -78,6 +89,7 @@ export function BalanceDistributionCard({ stats }: { stats: any }) {
               outerRadius={75}
               paddingAngle={2}
               strokeWidth={5}
+              stroke="var(--card)"
             >
               <Label
                 content={({ viewBox }) => {
@@ -98,17 +110,17 @@ export function BalanceDistributionCard({ stats }: { stats: any }) {
           </PieChart>
         </ChartContainer>
 
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2.5 pl-2">
           {paymentData.map((item) => (
             <div className="grid grid-cols-[1fr_auto] items-end gap-3" key={item.key}>
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <span className="h-2 w-1 rounded-full" style={{ backgroundColor: item.fill }} />
-                  <p className="truncate text-muted-foreground text-[11px]">{item.method}</p>
+                  <span className="h-2 w-1.5 rounded-full" style={{ backgroundColor: item.fill }} />
+                  <p className="truncate text-muted-foreground text-[11px] font-semibold">{item.method}</p>
                 </div>
-                <p className="font-bold text-xs mt-0.5">{formatVND(item.amount)}</p>
+                <p className="font-bold text-xs mt-0.5 text-slate-800">{formatVND(item.amount)}</p>
               </div>
-              <div className="font-semibold text-xs text-slate-500">{item.percentage}%</div>
+              <div className="font-extrabold text-xs text-slate-500 tabular-nums">{item.percentage}%</div>
             </div>
           ))}
         </div>

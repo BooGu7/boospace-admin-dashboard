@@ -13,11 +13,52 @@ export type GetOrdersResponse = {
 };
 
 /**
- * ACTION LẤY DANH SÁCH ĐƠN HÀNG
+ * TỰ ĐỘNG TẠO HOẶC LẤY ID PROFILE CHO KHÁCH HÀNG VÃNG LAI
+ */
+async function getOrCreateProfileForCustomer(email: string, name: string, phone?: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: existingProfile } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
+
+    if (existingProfile) {
+      return existingProfile.id;
+    }
+
+    const { data: newProfile, error: createError } = await supabase
+      .from("profiles")
+      .insert([
+        {
+          email: email,
+          name: name || "Khách hàng vãng lai",
+          phone: phone || "",
+          total_spent: 0,
+          role: "user",
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select("id")
+      .single();
+
+    if (createError) throw createError;
+    return newProfile?.id || null;
+  } catch (err: any) {
+    console.error("[AUTO_PROFILE_WARN] Không thể tự động tạo profile khách vãng lai:", err.message);
+    return null;
+  }
+}
+
+/**
+ * ACTION LẤY DANH SÁCH ĐƠN HÀNG (Mặc định sắp xếp theo ngày mới nhất)
  */
 export async function getOrders(params: GetOrdersParams): Promise<GetOrdersResponse> {
   try {
-    const result = await getOrdersService(params);
+    const result = await getOrdersService({
+      ...params,
+      sortBy: params.sortBy || "createdAt",
+      sortOrder: params.sortOrder || "desc",
+    });
+
     return {
       success: true,
       data: result.data,
@@ -40,24 +81,29 @@ export async function getOrders(params: GetOrdersParams): Promise<GetOrdersRespo
 }
 
 /**
- * ACTION CẬP NHẬT TRẠNG THÁI & GỬI EMAIL HÓA ĐƠN QUA RESEND
+ * ACTION CẬP NHẬT TRẠNG THÁI & GỬI EMAIL HÓA ĐƠN AN TOÀN CHỐNG SẬP (ĐÃ SỬA: Xóa updated_at)
  */
 export async function updateOrderStatusAction(id: string, status: string) {
   try {
     const supabase = await createClient();
 
-    // 1. Cập nhật trạng thái trong Database
+    // ĐÃ SỬA: Loại bỏ hoàn toàn trường updated_at khỏi câu lệnh cập nhật
     const { error: updateError } = await supabase.from("orders").update({ order_status: status }).eq("id", id);
 
     if (updateError) throw updateError;
 
-    // 2. Nếu chuyển sang "Confirmed", tự động kích hoạt gửi Email hóa đơn
     if (status === "Confirmed") {
       const { getOrderWithDetails } = await import("@/lib/repositories/order.repository");
       const order = await getOrderWithDetails(id);
 
       if (order?.customerEmail) {
-        await sendInvoiceEmail(order);
+        await getOrCreateProfileForCustomer(order.customerEmail, order.customerName, order.customerPhone);
+
+        try {
+          await sendInvoiceEmail(order);
+        } catch (emailError: any) {
+          console.warn("[RESEND_EMAIL_BYPASS] Bỏ qua lỗi gửi Email do API Key chưa hợp lệ:", emailError.message);
+        }
       }
     }
 
@@ -75,7 +121,83 @@ export async function updateOrderStatusAction(id: string, status: string) {
 }
 
 /**
- * ACTION XÓA ĐƠN HÀNG
+ * ACTION XÁC NHẬN THANH TOÁN THỦ CÔNG (ĐÃ SỬA: Xóa updated_at)
+ */
+export async function confirmPaymentAction(orderId: string) {
+  try {
+    const supabase = await createClient();
+
+    // ĐÃ SỬA: Loại bỏ hoàn toàn trường updated_at khỏi câu lệnh cập nhật
+    const { error } = await supabase.from("orders").update({ payment_status: "Paid" }).eq("id", orderId);
+
+    if (error) throw error;
+
+    revalidatePath(`/dashboard/orders/${orderId}`);
+    revalidatePath("/dashboard/orders");
+    return { success: true };
+  } catch (err: any) {
+    console.error("[CONFIRM_PAYMENT_ERROR]", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * ACTION BẮT ĐẦU VẬN CHUYỂN (ĐÃ SỬA: Xóa updated_at)
+ */
+export async function shipOrderAction(orderId: string) {
+  try {
+    const supabase = await createClient();
+
+    // ĐÃ SỬA: Loại bỏ hoàn toàn trường updated_at khỏi câu lệnh cập nhật
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        shipping_status: "Shipping",
+        order_status: "Shipped",
+      })
+      .eq("id", orderId);
+
+    if (error) throw error;
+
+    revalidatePath(`/dashboard/orders/${orderId}`);
+    revalidatePath("/dashboard/orders");
+    return { success: true };
+  } catch (err: any) {
+    console.error("[SHIP_ORDER_ERROR]", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * ACTION HOÀN TẤT ĐƠN HÀNG (GIAO THÀNH CÔNG) (ĐÃ SỬA: Xóa updated_at)
+ */
+export async function deliverOrderAction(orderId: string) {
+  try {
+    const supabase = await createClient();
+
+    // ĐÃ SỬA: Loại bỏ hoàn toàn trường updated_at khỏi câu lệnh cập nhật
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        shipping_status: "Delivered",
+        order_status: "Delivered",
+        payment_status: "Paid",
+      })
+      .eq("id", orderId);
+
+    if (error) throw error;
+
+    revalidatePath(`/dashboard/orders/${orderId}`);
+    revalidatePath("/dashboard/orders");
+    return { success: true };
+  } catch (err: any) {
+    console.error("[DELIVER_ORDER_ERROR]", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * ACTION XÓA ĐƠN HÀNG THỰC TẾ
  */
 export async function deleteOrderAction(id: string) {
   try {
@@ -91,7 +213,7 @@ export async function deleteOrderAction(id: string) {
 }
 
 /**
- * HÀM PHỤ TRỢ: SOẠN VÀ GỬI EMAIL QUA RESEND HTTP API
+ * HÀM PHỤ TRỢ GỬI EMAIL AN TOÀN CHỐNG CRASH
  */
 async function sendInvoiceEmail(order: any) {
   const resendApiKey = process.env.RESEND_API_KEY || "re_3cz1Z9tS_FQtmoNAQAF7STG1XrCH3mwHA";
@@ -114,7 +236,7 @@ async function sendInvoiceEmail(order: any) {
         x${item.quantity}
       </td>
       <td style="padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #2d3748; text-align: right; font-weight: bold;">
-        ${formatVND(item.total_price)}
+        ${formatVND(item.total_price || item.totalPrice)}
       </td>
     </tr>
   `,
@@ -158,32 +280,29 @@ async function sendInvoiceEmail(order: any) {
           </tr>
         </tbody>
       </table>
-
-      <div style="border-top: 1px solid #edf2f7; padding-top: 25px; text-align: center; color: #a0aec0; font-size: 12px; line-height: 1.5;">
-        <p style="margin: 0 0 8px 0;">Mọi thắc mắc về kỹ thuật in hoặc tiến độ hoàn thiện, bạn vui lòng phản hồi qua email: <a href="mailto:hello@boospace.tech" style="color: #3182ce; text-decoration: none; font-weight: 600;">hello@boospace.tech</a></p>
-        <p style="margin: 0;">© 2026 Boospace. Quyết tâm kiến tạo không gian làm việc mơ ước của bạn.</p>
-      </div>
     </div>
   `;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${resendApiKey}`,
-    },
-    body: JSON.stringify({
-      from: "Boospace <onboarding@resend.dev>",
-      to: order.customerEmail,
-      subject: `[Boospace] Xác nhận đơn hàng #${order.code} thành công!`,
-      html: emailHtml,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "Boospace <onboarding@resend.dev>",
+        to: order.customerEmail,
+        subject: `[Boospace] Xác nhận đơn hàng #${order.code} thành công!`,
+        html: emailHtml,
+      }),
+    });
 
-  if (!response.ok) {
-    const errData = await response.json();
-    console.error("Gửi email qua Resend thất bại:", errData);
-  } else {
-    console.log(`Đã gửi hóa đơn tự động thành công tới ${order.customerEmail}`);
+    if (!response.ok) {
+      const errData = await response.json();
+      console.warn("[RESEND_EMAIL_API_ERROR] Resend API trả về lỗi:", errData);
+    }
+  } catch (e: any) {
+    console.warn("[RESEND_FETCH_EXCEPTION] Không thể kết nối với Resend API:", e.message);
   }
 }

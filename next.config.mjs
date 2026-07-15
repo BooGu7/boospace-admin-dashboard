@@ -24,6 +24,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "placehold.co",
       },
+      // ĐÃ BỔ SUNG: Đăng ký tên miền cổng VietQR quốc gia an toàn
+      {
+        protocol: "https",
+        hostname: "img.vietqr.io",
+      },
     ],
   },
   async redirects() {

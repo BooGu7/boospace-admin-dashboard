@@ -1,112 +1,67 @@
 "use client";
 
-import { EyeOff, Filter, RotateCcw } from "lucide-react";
+import type { Table } from "@tanstack/react-table";
+import { RefreshCw, Search, X } from "lucide-react"; // ĐÃ SỬA: Sử dụng X thay cho Cross2Icon của Radix
+import { useRouter } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-export function OrdersToolbar({ table, state }: any) {
-  // 1. State phụ để nhập liệu không bị giật lag
-  const [searchValue, setSearchValue] = React.useState(state.search || "");
+interface ToolbarProps<TData> {
+  table: Table<TData>;
+}
 
-  // 2. Debounce: Đợi 500ms sau khi người dùng dừng gõ mới cập nhật URL gửi lên server
-  React.useEffect(() => {
-    const handler = setTimeout(() => {
-      if (searchValue !== (state.search || "")) {
-        state.setParams({
-          search: searchValue,
-          page: 1,
-        });
-      }
-    }, 500);
+export function Toolbar<TData>({ table }: ToolbarProps<TData>) {
+  const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-    return () => clearTimeout(handler);
-  }, [searchValue, state]);
+  const isFiltered = table.getState().columnFilters.length > 0;
 
-  // Đồng bộ lại ô nhập nếu URL bị reset ngoại vi
-  React.useEffect(() => {
-    setSearchValue(state.search || "");
-  }, [state.search]);
+  // LÀM MỚI DỮ LIỆU ĐƠN HÀNG THỰC TẾ
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    router.refresh(); // Gọi làm mới bộ nhớ cache Next.js Server
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Đã đồng bộ đơn hàng mới nhất từ Supabase!");
+    }, 600);
+  };
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2">
-      {/* Ô TÌM KIẾM MƯỢT MÀ */}
-      <Input
-        placeholder="Tìm mã đơn hàng hoặc tên khách..."
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        className="max-w-sm"
-      />
+    <div className="flex items-center justify-between gap-4 py-1.5">
+      <div className="flex flex-1 items-center gap-2">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Tìm kiếm mã đơn, tên khách..."
+            value={(table.getColumn("customerName")?.getFilterValue() as string) ?? ""}
+            onChange={(event) => table.getColumn("customerName")?.setFilterValue(event.target.value)}
+            className="h-8 pl-8 text-xs w-[250px] lg:w-[300px]"
+          />
+        </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* BỘ LỌC TRẠNG THÁI */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <Filter className="mr-2 h-4 w-4" />
-              {state.status ? `Trạng thái: ${state.status}` : "Bộ lọc trạng thái"}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {["Pending", "Confirmed", "Shipping", "Delivered", "Cancelled"].map((s) => (
-              <DropdownMenuItem
-                key={s}
-                onClick={() =>
-                  state.setParams({
-                    status: s,
-                    page: 1,
-                  })
-                }
-              >
-                {s === "Pending"
-                  ? "Chờ xử lý"
-                  : s === "Confirmed"
-                    ? "Đã xác nhận"
-                    : s === "Shipping"
-                      ? "Đang giao"
-                      : s === "Delivered"
-                        ? "Đã hoàn thành"
-                        : "Đã hủy"}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isFiltered && (
+          <Button variant="ghost" onClick={() => table.resetColumnFilters()} className="h-8 px-2 lg:px-3 text-xs">
+            Reset
+            {/* ĐÃ SỬA: Thay thế bằng Icon X từ lucide-react an toàn */}
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
 
-        {/* NÚT ĐẶT LẠI */}
-        <Button variant="ghost" size="sm" className="h-8 text-slate-500" onClick={state.resetParams}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Reset
+      <div className="flex items-center gap-2">
+        {/* NÚT LÀM MỚI HOẠT ĐỘNG THẬT */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8 text-xs font-bold gap-1.5"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing && "animate-spin"}`} />
+          Làm mới
         </Button>
-
-        {/* NÚT ẨN/HIỆN CỘT */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <EyeOff className="mr-2 h-4 w-4" /> Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllLeafColumns()
-              .filter((col: any) => col.getCanHide())
-              .map((col: any) => (
-                <DropdownMenuItem key={col.id} onClick={() => col.toggleVisibility()} className="cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={col.getIsVisible()}
-                    readOnly
-                    className="mr-2 cursor-pointer h-3 w-3"
-                  />
-                  <span className="capitalize">{col.id}</span>
-                </DropdownMenuItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   );
