@@ -1,5 +1,4 @@
 "use client";
-"use no memo";
 
 import {
   type ColumnFiltersState,
@@ -10,43 +9,49 @@ import {
   type PaginationState,
   type SortingState,
   useReactTable,
-  type VisibilityState,
 } from "@tanstack/react-table";
-import { Cog, Download, Grid, Plus, Rows3, Search, SlidersHorizontal } from "lucide-react";
+import { Search, Users as UsersIcon } from "lucide-react";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Kbd } from "@/components/ui/kbd";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { filters, type UserRow } from "./data";
-import { usersColumns } from "./users-columns";
+import { filters } from "./data";
+import { createColumns } from "./users-columns";
 import { UsersTable } from "./users-table";
 
-export function Users({ users }: { users: UserRow[] }) {
+export function Users({ users }: { users: any[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "joinedDate", desc: true }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-    search: false,
-    team: false,
-  });
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
+  // Quản lý đóng mở hộp thoại chi tiết động
+  const [openDetail, setOpenDetail] = React.useState(false);
+  const [selectedEmail, setSelectedEmail] = React.useState("");
+  const [selectedName, setSelectedName] = React.useState("");
+
+  // ĐÃ SỬA: Wrap handleOpenDetail trong useCallback để tránh lỗi useExhaustiveDependencies
+  const handleOpenDetail = React.useCallback((email: string, name: string) => {
+    setSelectedEmail(email);
+    setSelectedName(name);
+    setOpenDetail(true);
+  }, []);
+
+  // columns nhận diện tham chiếu tĩnh an toàn
+  const columns = React.useMemo(() => createColumns(handleOpenDetail), [handleOpenDetail]);
+
   const table = useReactTable({
     data: users,
-    columns: usersColumns,
+    columns,
     state: {
       rowSelection,
       sorting,
       columnFilters,
-      columnVisibility,
       pagination,
     },
     getRowId: (row) => row.email,
@@ -55,7 +60,6 @@ export function Users({ users }: { users: UserRow[] }) {
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -63,69 +67,57 @@ export function Users({ users }: { users: UserRow[] }) {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const roleFilter = (table.getColumn("role")?.getFilterValue() as string) ?? filters.role[0];
-  const teamFilter = (table.getColumn("team")?.getFilterValue() as string) ?? filters.team[0];
+  const searchQuery = (table.getColumn("name")?.getFilterValue() as string) ?? "";
+  const tierFilter = (table.getColumn("tier")?.getFilterValue() as string) ?? filters.tier[0];
   const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? filters.status[0];
-  const workspaceFilter = (table.getColumn("workspace")?.getFilterValue() as string) ?? filters.workspace[0];
-  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   function setColumnSelectFilter(columnId: string, value: string) {
-    table.getColumn(columnId)?.setFilterValue(value === "All" ? undefined : value);
+    table.getColumn(columnId)?.setFilterValue(value === "Tất cả" ? undefined : value);
     table.setPageIndex(0);
   }
 
   return (
-    <Card>
-      <CardHeader className="border-b has-data-[slot=card-action]:grid-cols-1 md:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-        <CardTitle className="text-xl leading-none">Users</CardTitle>
-        <CardDescription className="max-w-sm leading-snug">
-          Manage your organization members and their access.
-        </CardDescription>
-        <CardAction className="col-start-1 row-start-auto flex w-full flex-wrap justify-start gap-2 justify-self-stretch md:col-start-2 md:row-span-2 md:row-start-1 md:w-auto md:flex-nowrap md:justify-end md:justify-self-end">
-          <InputGroup className="h-7 w-full md:w-64">
+    <Card className="shadow-2xs border-border/70 overflow-hidden">
+      <CardHeader className="border-b bg-muted/10">
+        <div>
+          <CardTitle className="text-xl font-extrabold flex items-center gap-1.5">
+            <UsersIcon className="h-5 w-5 text-primary" /> Hồ sơ Khách hàng
+          </CardTitle>
+          <CardDescription className="max-w-sm text-[11px] mt-1">
+            Quản lý cơ sở dữ liệu thành viên, hạch toán tổng chi tiêu và phân hạng khách hàng in 3D.
+          </CardDescription>
+        </div>
+        <CardAction className="flex w-full flex-wrap justify-start gap-2 md:w-auto md:flex-nowrap md:justify-end">
+          <InputGroup className="h-9 w-full md:w-64">
             <InputGroupAddon align="inline-start">
-              <Search className="size-3.5" />
+              <Search className="size-4" />
             </InputGroupAddon>
             <InputGroupInput
-              className="h-7"
-              placeholder="Search users..."
+              className="h-9 text-xs pl-8"
+              placeholder="Tìm theo tên, email..."
               value={searchQuery}
               onChange={(event) => {
-                table.getColumn("search")?.setFilterValue(event.target.value || undefined);
+                table.getColumn("name")?.setFilterValue(event.target.value || undefined);
                 table.setPageIndex(0);
               }}
             />
-            <InputGroupAddon align="inline-end">
-              <Kbd className="h-4 text-[10px]">⌘K</Kbd>
-            </InputGroupAddon>
           </InputGroup>
-          <Button variant="outline" size="sm">
-            <SlidersHorizontal /> Hide
-          </Button>
-          <Button variant="outline" size="sm">
-            <Cog /> Customize
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download /> Export
-          </Button>
-          <Button size="sm">
-            <Plus /> Add User
-          </Button>
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4">
+        {/* Bộ lọc lựa chọn */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
           <div className="flex flex-wrap items-center gap-3">
-            <Select value={roleFilter} onValueChange={(value) => setColumnSelectFilter("role", value)}>
-              <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Role:</span>
+            {/* Bộ lọc Phân hạng */}
+            <Select value={tierFilter} onValueChange={(value) => setColumnSelectFilter("tier", value)}>
+              <SelectTrigger size="sm" className="h-8 text-xs font-semibold cursor-pointer">
+                <span className="text-muted-foreground">Phân hạng:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" align="start">
                 <SelectGroup>
-                  {filters.role.map((option) => (
-                    <SelectItem key={option} value={option}>
+                  {filters.tier.map((option) => (
+                    <SelectItem key={option} value={option} className="text-xs font-semibold">
                       {option}
                     </SelectItem>
                   ))}
@@ -133,31 +125,16 @@ export function Users({ users }: { users: UserRow[] }) {
               </SelectContent>
             </Select>
 
-            <Select value={teamFilter} onValueChange={(value) => setColumnSelectFilter("team", value)}>
-              <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Team:</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper" align="start">
-                <SelectGroup>
-                  {filters.team.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
+            {/* Bộ lọc Trạng thái */}
             <Select value={statusFilter} onValueChange={(value) => setColumnSelectFilter("status", value)}>
-              <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Status:</span>
+              <SelectTrigger size="sm" className="h-8 text-xs font-semibold cursor-pointer">
+                <span className="text-muted-foreground">Trạng thái:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   {filters.status.map((option) => (
-                    <SelectItem key={option} value={option}>
+                    <SelectItem key={option} value={option} className="text-xs font-semibold">
                       {option}
                     </SelectItem>
                   ))}
@@ -165,40 +142,15 @@ export function Users({ users }: { users: UserRow[] }) {
               </SelectContent>
             </Select>
           </div>
-
-          <Select value={workspaceFilter} onValueChange={(value) => setColumnSelectFilter("workspace", value)}>
-            <SelectTrigger size="sm">
-              <span className="text-muted-foreground">Workspace:</span>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper" align="end">
-              <SelectGroup>
-                {filters.workspace.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-4">
-          <div className="text-muted-foreground text-sm tabular-nums">{selectedCount} selected</div>
-
-          <Tabs defaultValue="list">
-            <TabsList>
-              <TabsTrigger value="list" aria-label="List view">
-                <Rows3 />
-              </TabsTrigger>
-              <TabsTrigger value="grid" aria-label="Grid view">
-                <Grid />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <UsersTable table={table} />
+        <UsersTable
+          table={table}
+          openDetail={openDetail}
+          setOpenDetail={setOpenDetail}
+          selectedEmail={selectedEmail}
+          selectedName={selectedName}
+        />
       </CardContent>
     </Card>
   );

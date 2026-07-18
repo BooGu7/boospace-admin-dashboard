@@ -165,8 +165,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  // Lấy phương thức thanh toán giả định từ mã hoặc mặc định payOS VietQR
-  const paymentMethod = order.code?.includes("BOO-") ? "Ví MoMo / payOS VietQR" : "Cổng VietQR (PayOS)";
+  // ĐỒNG BỘ ĐỘNG: Phân loại hình thức thanh toán từ trường dữ liệu của đơn hàng
+  const isCOD = order.paymentMethod === "COD";
+  const paymentMethodLabel = isCOD ? "Thanh toán tiền mặt khi nhận hàng (COD)" : "Chuyển khoản VietQR (payOS Gateway)";
 
   // ĐỒNG BỘ: Định nghĩa các hàm bao bọc Server Action có kiểu trả về rỗng (Promise<void>) tương thích 100% với form action
   const handleConfirmPayment = async () => {
@@ -285,6 +286,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Hình thức áp dụng:</span>
+                <span className="font-extrabold text-blue-900 dark:text-blue-300">{paymentMethodLabel}</span>
+              </div>
+
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Tạm tính sản phẩm:</span>
                 <span className="font-semibold tabular-nums text-slate-800">{formatCurrency(itemsSubtotal)}</span>
               </div>
@@ -352,7 +358,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Đơn hàng được khởi tạo thành công với hình thức thanh toán{" "}
-                      <strong className="text-slate-700">{paymentMethod}</strong>.
+                      <strong className="text-slate-700">{paymentMethodLabel}</strong>.
                     </p>
                   </div>
                 </div>
@@ -404,13 +410,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                         {order.paymentStatus === "Paid" ? "Đã xác nhận thanh toán thành công" : "Đang chờ thanh toán"}
                       </span>
                       <Badge variant="outline" className="text-[9px]">
-                        {paymentMethod}
+                        {paymentMethodLabel}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {order.paymentStatus === "Paid"
                         ? `Xác nhận nhận đủ ${formatCurrency(finalCalculatedTotal)} qua hệ thống chuyển khoản.`
-                        : "Đơn hàng đang ở trạng thái chờ đối tác ngân hàng hoặc ví MoMo đồng bộ chuyển khoản."}
+                        : isCOD
+                          ? "Hình thức COD: Giao dịch sẽ được thợ in xác nhận sau khi bưu tá báo nhận tiền mặt thành công."
+                          : "Hình thức Chuyển khoản: Hệ thống đang chờ đối tác thanh toán payOS / VietQR xác thực dòng tiền."}
                     </p>
                   </div>
                 </div>

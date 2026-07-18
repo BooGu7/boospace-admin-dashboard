@@ -18,6 +18,7 @@ const MOCK_ORDERS = [
     total: 350000,
     order_status: "Pending",
     payment_status: "Pending",
+    payment_method: "VietQR", // ĐỒNG BỘ: Thêm hình thức thanh toán giả lập
     created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -28,6 +29,7 @@ const MOCK_ORDERS = [
     total: 1250000,
     order_status: "Confirmed",
     payment_status: "Paid",
+    payment_method: "VietQR", // ĐỒNG BỘ: Thêm hình thức thanh toán giả lập
     created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
   },
   {
@@ -38,6 +40,7 @@ const MOCK_ORDERS = [
     total: 480000,
     order_status: "Delivered",
     payment_status: "Paid",
+    payment_method: "COD", // ĐỒNG BỘ: Thêm hình thức thanh toán giả lập
     created_at: new Date(Date.now() - 1000 * 60 * 600).toISOString(),
   },
   {
@@ -48,6 +51,7 @@ const MOCK_ORDERS = [
     total: 3200000,
     order_status: "Delivered",
     payment_status: "Paid",
+    payment_method: "VietQR", // ĐỒNG BỘ: Thêm hình thức thanh toán giả lập
     created_at: new Date(Date.now() - 1000 * 60 * 1440 * 2).toISOString(),
   },
   {
@@ -58,6 +62,7 @@ const MOCK_ORDERS = [
     total: 950000,
     order_status: "Cancelled",
     payment_status: "Refunded",
+    payment_method: "COD", // ĐỒNG BỘ: Thêm hình thức thanh toán giả lập
     created_at: new Date(Date.now() - 1000 * 60 * 1440 * 3).toISOString(),
   },
 ];
@@ -95,13 +100,11 @@ export async function getOrders(params: GetOrdersParams) {
 
   const { data, error, count } = await query.order(dbSortColumn, { ascending: sortOrder === "asc" }).range(from, to);
 
-  // ĐÃ SỬA: Đưa kiểm tra lỗi (error) lên trên đầu để TypeScript phân giải chính xác
   if (error) {
     console.error("[GET_ORDERS_ERROR]", error.message);
     throw new Error(error.message);
   }
 
-  // Sau khi kiểm tra lỗi xong, mới xử lý dữ liệu trống/fallback
   if (!data || data.length === 0) {
     let filteredMock = [...MOCK_ORDERS];
     if (search && search.trim() !== "") {
@@ -144,6 +147,7 @@ export async function getOrders(params: GetOrdersParams) {
 export async function getOrderWithDetails(orderId: string) {
   const supabase = await createClient();
 
+  // ĐỒNG BỘ ĐỘNG: Đã thêm ánh xạ cột paymentMethod:payment_method từ Supabase
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
@@ -159,7 +163,8 @@ export async function getOrderWithDetails(orderId: string) {
       notes,
       appliedCouponId:applied_coupon_id,
       total,
-      createdAt:created_at
+      createdAt:created_at,
+      paymentMethod:payment_method
     `,
     )
     .eq("id", orderId)
@@ -183,6 +188,7 @@ export async function getOrderWithDetails(orderId: string) {
       discountPercent: 0,
       total: mockOrder.total,
       createdAt: mockOrder.created_at,
+      paymentMethod: mockOrder.payment_method || "COD", // Nạp giá trị phương thức thanh toán giả lập
       order_items: [
         {
           id: "item-1",
@@ -232,6 +238,7 @@ export async function getOrderWithDetails(orderId: string) {
       code: order.code ? order.code.replace("BOO-", "") : order.id.substring(0, 5),
       couponCode,
       discountPercent,
+      paymentMethod: order.paymentMethod || "COD",
       order_items: [],
     };
   }
@@ -263,6 +270,7 @@ export async function getOrderWithDetails(orderId: string) {
     code: order.code ? order.code.replace("BOO-", "") : order.id.substring(0, 5),
     couponCode,
     discountPercent,
+    paymentMethod: order.paymentMethod || "COD", // Trả về phương thức thanh toán thực tế của đơn
     order_items: enrichedItems,
   };
 }
@@ -535,11 +543,6 @@ export async function getEcommerceDashboardStats() {
   };
 }
 
-/**
- * ==========================================================
- * KHÔI PHỤC HÀM: getFinancialStats (Dành cho trang Tài chính)
- * ==========================================================
- */
 export async function getFinancialStats() {
   const supabase = await createClient();
 
@@ -565,7 +568,6 @@ export async function getFinancialStats() {
     createdAt: o.created_at,
   }));
 
-  // Đọc danh sách chi tiết vật phẩm và giá vốn song song để tránh lỗi liên kết
   const [itemsRes, productsRes, categoriesRes] = await Promise.all([
     supabase.from("order_items").select("quantity, total_price, product_id"),
     supabase.from("products").select("id, cost_price, category_id"),
@@ -600,7 +602,6 @@ export async function getFinancialStats() {
       categoryRevenueMap[categoryName] = (categoryRevenueMap[categoryName] || 0) + rev;
     }
   } else {
-    // Dự phòng tính toán tỷ lệ lợi nhuận cơ bản
     totalCogs = Math.round(grossRevenue * 0.32);
     categoryRevenueMap["Mô hình Articulated"] = Math.round(grossRevenue * 0.45);
     categoryRevenueMap["Decor bàn làm việc"] = Math.round(grossRevenue * 0.35);
@@ -625,11 +626,6 @@ export async function getFinancialStats() {
   };
 }
 
-/**
- * ==========================================================
- * KHÔI PHỤC HÀM: getAnalyticsStats (Dành cho trang Phân tích)
- * ==========================================================
- */
 export async function getAnalyticsStats() {
   const supabase = await createClient();
 

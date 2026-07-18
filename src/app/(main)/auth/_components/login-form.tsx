@@ -1,118 +1,120 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Lock, Mail } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import * as React from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: "Vui lòng nhập địa chỉ email hợp lệ.",
-  }),
-  password: z.string().min(6, {
-    message: "Mật khẩu phải chứa ít nhất 6 ký tự.",
-  }),
-  remember: z.boolean().optional(),
-});
 
 export function LoginForm() {
   const router = useRouter();
   const supabase = createClient();
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = React.useTransition();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      remember: false,
-    },
-  });
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [rememberMe, setRememberMe] = React.useState(false);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      setLoading(true);
+  // KÍCH HOẠT TÍNH NĂNG GHI NHỚ ĐĂNG NHẬP:Prefill email khi tải trang
+  React.useEffect(() => {
+    const savedEmail = localStorage.getItem("remembered_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
-      // Xác thực đăng nhập qua Supabase Auth [21]
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      toast.error("Vui lòng điền đầy đủ Email và Mật khẩu.");
+      return;
+    }
+
+    startTransition(async () => {
       const { error } = await supabase.auth.signInWithPassword({
-        email: values.email.trim(),
-        password: values.password,
+        email,
+        password,
       });
 
       if (error) {
         toast.error(error.message || "Tài khoản hoặc mật khẩu không chính xác.");
-        return;
+      } else {
+        // Nếu tích ghi nhớ đăng nhập, lưu email vào localStorage
+        if (rememberMe) {
+          localStorage.setItem("remembered_email", email);
+        } else {
+          localStorage.removeItem("remembered_email");
+        }
+
+        toast.success("Đăng nhập hệ thống thành công!");
+        router.push("/dashboard/default");
+        router.refresh();
       }
-
-      toast.success("Đăng nhập thành công! Đang chuyển hướng...");
-
-      // Cập nhật lại cookie phiên làm việc Next.js [21]
-      router.refresh();
-
-      // Tiến hành chuyển hướng về trang chủ mặc định của dashboard quản trị [21]
-      router.push("/dashboard/default");
-    } catch (_e) {
-      toast.error("Đã xảy ra lỗi ngoài ý muốn.");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
-    <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 text-left">
-      <FieldGroup className="gap-4">
-        <Controller
-          control={form.control}
-          name="email"
-          render={({ field, fieldState }) => (
-            <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel>Địa chỉ Email</FieldLabel>
-              <Input {...field} type="email" placeholder="you@example.com" className="text-black" />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+    <form onSubmit={handleLogin} className="space-y-4 text-xs">
+      <div className="space-y-1">
+        <Label className="font-bold text-slate-700 flex items-center gap-1">
+          <Mail className="h-3 w-3" /> Địa chỉ Email
+        </Label>
+        <Input
+          type="email"
+          placeholder="VD: admin@boospace.tech"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-9 text-xs"
+          disabled={isPending}
         />
+      </div>
 
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field, fieldState }) => (
-            <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel>Mật khẩu</FieldLabel>
-              <Input {...field} type="password" placeholder="••••••••" className="text-black" />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <Label className="font-bold text-slate-700 flex items-center gap-1">
+            <Lock className="h-3 w-3" /> Mật khẩu đăng nhập
+          </Label>
+          <Link href="/auth/v2/forgot-password" className="text-[10px] text-blue-600 hover:underline font-bold">
+            Quên mật khẩu?
+          </Link>
+        </div>
+        <Input
+          type="password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="h-9 text-xs font-mono"
+          disabled={isPending}
         />
+      </div>
 
-        <Controller
-          control={form.control}
-          name="remember"
-          render={({ field }) => (
-            <Field orientation="horizontal">
-              <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(Boolean(checked))} />
-              <FieldContent>
-                <FieldLabel className="font-normal">Ghi nhớ đăng nhập</FieldLabel>
-              </FieldContent>
-            </Field>
-          )}
+      {/* Checkbox Ghi nhớ đăng nhập */}
+      <div className="flex items-center space-x-2 pt-1">
+        <Checkbox
+          id="remember"
+          checked={rememberMe}
+          onCheckedChange={(checked) => setRememberMe(!!checked)}
+          disabled={isPending}
         />
-      </FieldGroup>
+        <label htmlFor="remember" className="text-[10px] font-bold text-slate-600 cursor-pointer select-none">
+          Ghi nhớ đăng nhập cho lần sau
+        </label>
+      </div>
 
       <Button
-        disabled={loading}
-        className="w-full font-mono uppercase tracking-wider text-xs font-bold py-3.5"
         type="submit"
+        disabled={isPending}
+        className="w-full h-9 bg-black text-white hover:bg-black/90 font-bold gap-2 mt-2 cursor-pointer shadow-2xs"
       >
-        {loading ? "Đang kết nối..." : "Đăng nhập hệ thống"}
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        ĐĂNG NHẬP HỆ THỐNG
       </Button>
     </form>
   );
