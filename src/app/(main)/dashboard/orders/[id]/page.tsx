@@ -16,7 +16,6 @@ import {
   Truck,
   User,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 // Nhập khẩu các hành động đổi trạng thái trực tiếp
@@ -247,12 +246,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 {order.order_items?.map((item: any) => (
                   <div key={item.id} className="flex items-start gap-4 border-b pb-5 last:border-0 last:pb-0">
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg border bg-muted shrink-0">
-                      <Image
+                      {/* biome-ignore lint/performance/noImgElement: Sử dụng <img> tiêu chuẩn để tránh lỗi chặn domain ngoài của next/image trên môi trường production */}
+                      <img
                         src={item.products?.images?.[0] || "https://placehold.co/200x200?text=No+Image"}
                         alt="product"
-                        fill
-                        sizes="80px"
-                        className="object-cover"
+                        className="object-cover h-full w-full"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

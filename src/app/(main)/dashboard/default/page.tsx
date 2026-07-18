@@ -3,10 +3,19 @@ import { MetricCards } from "./_components/metric-cards";
 import { PerformanceOverview } from "./_components/performance-overview";
 import { SubscriberOverview } from "./_components/subscriber-overview";
 
-export const revalidate = 0; // Đảm bảo dữ liệu luôn mới nhất khi F5
+export const revalidate = 0; // Luôn tải mới dữ liệu thực tế khi F5
 
-export default async function DashboardDefaultPage() {
-  const stats = await getDashboardStats();
+interface PageProps {
+  searchParams: Promise<{
+    range?: string;
+    startDate?: string;
+    endDate?: string;
+  }>;
+}
+
+export default async function DashboardDefaultPage({ searchParams }: PageProps) {
+  const { range = "7days", startDate, endDate } = await searchParams;
+  const stats = await getDashboardStats(range, startDate, endDate);
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -17,17 +26,14 @@ export default async function DashboardDefaultPage() {
         </div>
       </div>
 
-      {/* TẬN DỤNG CÁC CARD KPI CỦA BẠN (TRUYỀN DATA THẬT) */}
       <MetricCards stats={stats} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-4">
-          {/* TẬN DỤNG BIỂU ĐỒ COMPOSEDCHART CỦA BẠN */}
           <PerformanceOverview chartData={stats.chartData} />
         </div>
 
         <div className="col-span-3">
-          {/* TẬN DỤNG BẢNG KHÁCH HÀNG GẦN ĐÂY THẬT TỪ SUPABASE */}
           <SubscriberOverview customers={stats.recentCustomers || []} />
         </div>
       </div>

@@ -20,13 +20,13 @@ export interface CustomerRow {
 }
 
 /**
- * TRUY VẤN DANH SÁCH KHÁCH HÀNG (HỢP NHẤT TOÀN DIỆN CHUẨN ERP)
+ * TRUY VẤN DANH SÁCH KHÁCH HÀNG (ÁP DỤNG ĐỐI CHIẾU CHUẨN EMAIL TRÁNH SAI LỆCH KHÓA NGOẠI)
  */
 export async function getCustomersAction() {
   try {
     const supabase = await createClient();
 
-    // 1. Tải danh sách đơn hàng thực tế
+    // 1. Tải danh sách đơn hàng thực tế không bị hủy
     const { data: dbOrders, error: ordersErr } = await supabase
       .from("orders")
       .select("id, customer_name, customer_email, customer_phone, customer_address, total, order_status, created_at")
@@ -51,7 +51,7 @@ export async function getCustomersAction() {
       if (!u.email) continue;
       const emailKey = u.email.trim().toLowerCase();
 
-      // Giải mã an toàn đối tượng JSONB "data" của bạn
+      // Giải mã đối tượng JSONB "data"
       const meta = u.data || {};
       const name = meta.name || meta.customer_name || meta.displayName || "Thành viên mới";
       const phone = meta.phone || meta.customer_phone || "Chưa cung cấp";
@@ -59,7 +59,7 @@ export async function getCustomersAction() {
       // Địa chỉ lấy từ thông tin user nếu chưa có order
       const userAddress = meta.address || meta.customer_address || "Nhận trực tiếp tại xưởng Boospace";
       const avatarUrl = meta.avatar_url || meta.avatarUrl || null;
-      const blocked = !!meta.blocked; // Kiểm tra trạng thái khóa tài khoản
+      const blocked = !!meta.blocked;
 
       customerMap.set(emailKey, {
         id: u.id,
@@ -81,12 +81,12 @@ export async function getCustomersAction() {
         tier: "Bronze",
         avatarUrl,
         active: true,
-        hasAccount: true, // Đánh dấu đã đăng ký tài khoản
+        hasAccount: true, // Tài khoản đã đăng ký
         blocked,
       });
     }
 
-    // Quét qua các hóa đơn thực tế để đồng bộ Trọng Tôn, Space Boo...
+    // Quét qua các hóa đơn thực tế để đối chiếu dồn đơn theo định danh Email độc bản
     for (const order of orders) {
       if (!order.customer_email) continue;
       const emailKey = order.customer_email.trim().toLowerCase();
@@ -112,18 +112,17 @@ export async function getCustomersAction() {
           totalSpent: 0,
           tier: "Bronze",
           active: true,
-          hasAccount: false, // Đánh dấu KHÁCH VÃNG LAI
+          hasAccount: false, // Khách vãng lai
           blocked: false,
         });
       }
 
-      // Cộng dồn doanh số mua hàng thực tế
+      // Cộng dồn doanh số mua hàng thực tế dựa trên email
       const customerData = customerMap.get(emailKey);
       if (customerData) {
         customerData.orderCount += 1;
         customerData.totalSpent += Number(order.total || 0);
 
-        // Địa chỉ nhận hàng ưu tiên lấy trong đơn hàng (order) trước
         if (order.customer_address) {
           customerData.address = order.customer_address;
         }
@@ -133,7 +132,7 @@ export async function getCustomersAction() {
       }
     }
 
-    // Tính toán phân hạng động dựa trên tổng chi tiêu thực tế (Chỉ gán phân hạng nếu đã có account)
+    // Tính toán phân hạng động dựa trên tổng chi tiêu thực tế (Khách vãng lai không hiển thị phân hạng)
     const finalCustomers = Array.from(customerMap.values()).map((c) => {
       let tier: CustomerRow["tier"] = "Bronze";
       if (c.totalSpent >= 1500000) tier = "Platinum";
@@ -160,7 +159,6 @@ export async function toggleUserBlockAction(userId: string, currentBlocked: bool
   try {
     const supabase = await createClient();
 
-    // 1. Lấy dữ liệu metadata hiện tại của tài khoản
     const { data: user, error: fetchError } = await supabase.from("users").select("data").eq("id", userId).single();
 
     if (fetchError) throw fetchError;
@@ -168,10 +166,9 @@ export async function toggleUserBlockAction(userId: string, currentBlocked: bool
     const meta = user?.data || {};
     const updatedMeta = {
       ...meta,
-      blocked: !currentBlocked, // Đổi trạng thái khóa ngược lại
+      blocked: !currentBlocked,
     };
 
-    // 2. Cập nhật lại đối tượng JSONB data lên Supabase
     const { error } = await supabase
       .from("users")
       .update({ data: updatedMeta, updated_at: new Date().toISOString() })
@@ -194,7 +191,6 @@ export async function getCustomerOrderHistoryAction(email: string) {
   try {
     const supabase = await createClient();
 
-    // Tải danh sách đơn gồm cả địa chỉ và phương thức thanh toán
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select("id, code, total, order_status, payment_status, created_at, payment_method, customer_address")
@@ -206,7 +202,6 @@ export async function getCustomerOrderHistoryAction(email: string) {
 
     const orderIds = orders.map((o) => o.id);
 
-    // Tải chi tiết các mặt hàng trong đơn
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
       .select("order_id, quantity, unit_price, total_price, product_id")
@@ -244,8 +239,8 @@ export async function getCustomerOrderHistoryAction(email: string) {
         total: Number(order.total),
         orderStatus: order.order_status,
         paymentStatus: order.payment_status,
-        paymentMethod: order.payment_method || "COD", // Trả về phương thức thanh toán
-        address: order.customer_address || "Nhận trực tiếp tại xưởng Boospace", // Trả về địa chỉ bưu cục
+        paymentMethod: order.payment_method || "COD",
+        address: order.customer_address || "Nhận trực tiếp tại xưởng Boospace",
         date: new Date(order.created_at).toLocaleString("vi-VN"),
         items: orderItems,
       };

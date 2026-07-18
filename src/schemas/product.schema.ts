@@ -6,8 +6,20 @@ export const productSchema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/, "Slug không hợp lệ"),
-  category_id: z.string().uuid().nullable(),
-  brand_id: z.string().uuid().nullable(),
+
+  // Chuyển từ kiểm duyệt định dạng UUID nghiêm ngặt sang chuỗi chữ tự do để tương thích với mọi loại định danh hệ thống
+  category_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val === "" ? null : val)),
+
+  brand_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val === "" ? null : val)),
+
   short_description: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   sku: z.string().nullable().optional(),
