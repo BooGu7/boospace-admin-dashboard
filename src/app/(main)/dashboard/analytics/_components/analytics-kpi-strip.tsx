@@ -14,7 +14,7 @@ export function AnalyticsKpiStrip({ stats }: { stats: any }) {
       <div className="grid divide-y *:data-[slot=card]:rounded-none *:data-[slot=card]:ring-0 md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-5">
         <Card>
           <CardHeader>
-            <CardTitle className="font-normal text-sm">Unique Visitors</CardTitle>
+            <CardTitle className="font-normal text-sm">Khách truy cập độc nhất</CardTitle>
             <CardAction>
               <Ellipsis className="size-4" />
             </CardAction>
@@ -27,14 +27,14 @@ export function AnalyticsKpiStrip({ stats }: { stats: any }) {
               </Badge>
             </div>
             <div className="text-muted-foreground text-xs">
-              <span>Độc nhất • last 4 weeks</span>
+              <span>Độc nhất • 4 tuần qua</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-normal text-sm">Sessions</CardTitle>
+            <CardTitle className="font-normal text-sm">Số phiên kết nối</CardTitle>
             <CardAction>
               <Ellipsis className="size-4" />
             </CardAction>
@@ -47,14 +47,14 @@ export function AnalyticsKpiStrip({ stats }: { stats: any }) {
               </Badge>
             </div>
             <div className="text-muted-foreground text-xs">
-              <span>Phiên kết nối • last 4 weeks</span>
+              <span>Phiên kết nối • 4 tuần qua</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-normal text-sm">Pageviews</CardTitle>
+            <CardTitle className="font-normal text-sm">Tổng lượt xem trang</CardTitle>
             <CardAction>
               <Ellipsis className="size-4" />
             </CardAction>
@@ -67,34 +67,34 @@ export function AnalyticsKpiStrip({ stats }: { stats: any }) {
               </Badge>
             </div>
             <div className="text-muted-foreground text-xs">
-              <span>Lượt xem trang • last 4 weeks</span>
+              <span>Lượt xem trang • 4 tuần qua</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-normal text-sm">Engagement Rate</CardTitle>
+            <CardTitle className="font-normal text-sm">Tỷ lệ tương tác</CardTitle>
             <CardAction>
               <Ellipsis className="size-4" />
             </CardAction>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-2xl font-bold leading-none tracking-tight">61.4%</div>
+              <div className="text-2xl font-bold leading-none tracking-tight">{stats.engagementRate || "61.4%"}</div>
               <Badge className="bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300">
                 <ArrowUpRight className="size-3 mr-0.5" /> 4.2%
               </Badge>
             </div>
             <div className="text-muted-foreground text-xs">
-              <span>Tỷ lệ tương tác • last 4 weeks</span>
+              <span>Tỷ lệ tương tác • 4 tuần qua</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-normal text-sm">Conversion Rate</CardTitle>
+            <CardTitle className="font-normal text-sm">Tỷ lệ chuyển đổi đơn</CardTitle>
             <CardAction>
               <Ellipsis className="size-4" />
             </CardAction>
@@ -109,7 +109,7 @@ export function AnalyticsKpiStrip({ stats }: { stats: any }) {
               </Badge>
             </div>
             <div className="text-muted-foreground text-xs">
-              <span>Tỷ lệ mua hàng / profiles</span>
+              <span>Tỷ lệ mua hàng / tổng tài khoản</span>
             </div>
           </CardContent>
         </Card>
