@@ -38,7 +38,7 @@ Tài liệu này quy định các tiêu chuẩn bắt buộc về thiết kế k
 
 ---
 
-## 4. Tiêu chuẩn TypeScript & Biome Linter
+## 4. Tiêu chuẩn TypeScript & Biome Linter ()
 
 - **Kiểu dữ liệu chặt chẽ (Strict Typing)**: Định nghĩa đầy đủ kiểu dữ liệu cho toàn bộ các biến, tham số hàm. Tuyệt đối không gán mảng rỗng `[]` tự suy luận kiểu `never[]` gây lỗi kiểm duyệt kiểu tĩnh khi đóng gói sản phẩm (`build`). Định nghĩa đầy đủ `SortingState`, `ColumnFiltersState` cho bảng.
 - **Lập chỉ mục động an toàn (Dynamic Indexing)**: Khi xử lý dữ liệu của các bảng có cấu trúc cột động tải từ database (như bảng Kanban), hãy định nghĩa kiểu dữ liệu dạng bản ghi chuỗi động để tránh lỗi biên dịch:
