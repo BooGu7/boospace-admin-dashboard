@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, FileDown, FileUp, RefreshCw, Share2 } from "lucide-react";
+import { Ellipsis, FileDown, RefreshCw, Share2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -132,6 +132,8 @@ export function AnalyticsToolbar() {
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
+            {/* Đã bổ sung thêm mục hôm nay */}
+            <SelectItem value="today">Hôm nay</SelectItem>
             <SelectItem value="last-7-days">7 ngày qua</SelectItem>
             <SelectItem value="last-4-weeks">4 tuần qua</SelectItem>
             <SelectItem value="last-3-months">3 tháng qua</SelectItem>
@@ -154,10 +156,7 @@ export function AnalyticsToolbar() {
               <FileDown className="mr-2 h-4 w-4" />
               Xuất báo cáo JSON
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.success("Bộ nạp ngoài đã sẵn sàng kết nối")}>
-              <FileUp className="mr-2 h-4 w-4" />
-              Nhập dữ liệu ngoài
-            </DropdownMenuItem>
+            {/* ĐÃ GỠ BỎ MỤC NHẬP DỮ LIỆU NGOÀI ĐỂ TRÁNH RÁC HỆ THỐNG */}
             <DropdownMenuItem onClick={handleShareDashboard}>
               <Share2 className="mr-2 h-4 w-4" />
               Chia sẻ bảng số liệu

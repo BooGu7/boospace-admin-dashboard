@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { PROVINCE_MAP } from "@/data/data_location"; // Nhập khẩu nguồn địa danh tập trung
 import { createClient } from "@/lib/supabase/server";
 import type { GetOrdersParams } from "@/types/order";
 
@@ -11,12 +12,11 @@ const SORT_MAP: Record<string, string> = {
   customerName: "customer_name",
 };
 
-// Khai báo thông tin xác thực Google Service Account
+// Khai báo thông tin xác thực Google Service Account ẩn danh
 const GOOGLE_CLIENT_EMAIL = "boospace-analytics@praxis-acolyte-466409-a0.iam.gserviceaccount.com";
 
 /**
  * Tự động tìm kiếm và nạp Private Key từ file vật lý cục bộ hoặc biến môi trường ẩn (.env.local).
- * Đã tinh chỉnh tối giản chỉ quét tệp tin credentials.json theo cấu trúc chuẩn của dự án.
  */
 function getPrivateKeySafely(): string {
   if (process.env.GOOGLE_PRIVATE_KEY) {
@@ -126,6 +126,46 @@ async function fetchGa4Report(propertyId: string, accessToken: string, body: any
   }
 
   return res.json();
+}
+
+/**
+ * Hàm dịch thuật tự động nguồn lưu lượng từ GA4 sang Tiếng Việt
+ */
+function translateTrafficSource(source: string): string {
+  const clean = source.toLowerCase();
+  if (clean === "direct") return "Truy cập trực tiếp";
+  if (clean.includes("google")) return "Tìm kiếm Google (SEO)";
+  if (clean.includes("facebook") || clean.includes("fb")) return "Mạng xã hội Facebook";
+  if (clean.includes("youtube")) return "Mạng xã hội YouTube";
+  if (clean.includes("instagram")) return "Mạng xã hội Instagram";
+  if (clean.includes("referral")) return "Trang giới thiệu liên kết";
+  if (clean.includes("newsletter") || clean.includes("email")) return "Thư điện tử (Email)";
+  if (clean === "(not set)") return "Khác / Chưa xác định";
+  return source;
+}
+
+/**
+ * Thuật toán cộng dồn số liệu và gộp các nguồn trùng nghĩa sau khi dịch
+ */
+function aggregateTrafficReport(rows: any[]): { source: string; visitors: number; label: string }[] {
+  const map = new Map<string, number>();
+
+  (rows || []).forEach((row: any) => {
+    const rawSource = row.dimensionValues?.[0]?.value || "Organic";
+    const translated = translateTrafficSource(rawSource);
+    const value = Number(row.metricValues?.[0]?.value || 0);
+    map.set(translated, (map.get(translated) || 0) + value);
+  });
+
+  const formatLabel = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`);
+
+  return Array.from(map.entries())
+    .map(([source, visitors]) => ({
+      source,
+      visitors,
+      label: formatLabel(visitors), // Bổ sung trường label chuẩn hóa
+    }))
+    .sort((a, b) => b.visitors - a.visitors);
 }
 
 /**
@@ -980,14 +1020,18 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
     const diffTime = Math.abs(end.getTime() - start.getTime());
     limitDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
   } else {
-    if (range === "last-7-days") {
+    if (range === "today") {
+      limitDays = 1;
+      gStartDate = "today";
+    } else if (range === "last-7-days") {
       limitDays = 7;
       gStartDate = "7daysAgo";
     } else if (range === "last-3-months") {
       limitDays = 90;
       gStartDate = "90daysAgo";
     } else if (range === "year-to-date") {
-      gStartDate = "2026-01-01";
+      const currentYear = new Date().getFullYear();
+      gStartDate = `${currentYear}-01-01`;
       const now = new Date();
       const startOfYear = new Date(now.getFullYear(), 0, 1);
       const diffTime = Math.abs(now.getTime() - startOfYear.getTime());
@@ -1045,7 +1089,7 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       dateRanges: [{ startDate: gStartDate, endDate: gEndDate }],
       dimensions: [{ name: "city" }],
       metrics: [{ name: "activeUsers" }],
-      limit: 5,
+      limit: 10,
     });
 
     const ageRes = await fetchGa4Report(propertyId, accessToken, {
@@ -1062,6 +1106,31 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       metrics: [{ name: "activeUsers" }],
       limit: 5,
     });
+
+    // 8. TRUY VẤN BIỂU ĐỒ TRỰC QUAN GA4 (Active Users & Sessions theo thời gian)
+    const trendDimension = range === "today" ? "hour" : "date";
+    const trendRes = await fetchGa4Report(propertyId, accessToken, {
+      dateRanges: [{ startDate: gStartDate, endDate: gEndDate }],
+      dimensions: [{ name: trendDimension }],
+      metrics: [{ name: "activeUsers" }, { name: "sessions" }],
+      orderBys: [{ dimension: { dimensionName: trendDimension } }],
+    }).catch(() => null);
+
+    // 9. TRUY VẤN TỪ KHÓA TÌM KIẾM TỰ NHIÊN (SEO Google Search Keywords)
+    const keywordRes = await fetchGa4Report(propertyId, accessToken, {
+      dateRanges: [{ startDate: gStartDate, endDate: gEndDate }],
+      dimensions: [{ name: "organicGoogleSearchQuery" }],
+      metrics: [{ name: "activeUsers" }],
+      limit: 10,
+    }).catch(() => null);
+
+    // 10. TRUY VẤN QUỐC GIA TRONG QUÁ KHỨ (BẢN ĐỒ PHÂN BỔ KHÁCH TRUY CẬP THỰC TẾ)
+    const countryRes = await fetchGa4Report(propertyId, accessToken, {
+      dateRanges: [{ startDate: gStartDate, endDate: gEndDate }],
+      dimensions: [{ name: "country" }],
+      metrics: [{ name: "activeUsers" }],
+      limit: 10,
+    }).catch(() => null);
 
     const metricValues = kpiData?.rows?.[0]?.metricValues || kpiData?.totals?.[0]?.metricValues || [];
     const uniqueVisitors = Number(metricValues[0]?.value || 0);
@@ -1086,34 +1155,11 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       };
     });
 
-    const formatLabel = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`);
+    const _formatLabel = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`);
 
-    const sources = (sourcesData?.rows || []).map((row: any) => {
-      const visitors = Number(row.metricValues[0]?.value || 0);
-      return {
-        source: row.dimensionValues[0]?.value || "Organic",
-        visitors,
-        label: formatLabel(visitors),
-      };
-    });
-
-    const campaigns = (campaignsData?.rows || []).map((row: any) => {
-      const visitors = Number(row.metricValues[0]?.value || 0);
-      return {
-        source: row.dimensionValues[0]?.value || "Newsletter",
-        visitors,
-        label: formatLabel(visitors),
-      };
-    });
-
-    const referrers = (referrersData?.rows || []).map((row: any) => {
-      const visitors = Number(row.metricValues[0]?.value || 0);
-      return {
-        source: row.dimensionValues[0]?.value || "Google",
-        visitors,
-        label: formatLabel(visitors),
-      };
-    });
+    const sources = aggregateTrafficReport(sourcesData?.rows);
+    const campaigns = aggregateTrafficReport(campaignsData?.rows);
+    const referrers = aggregateTrafficReport(referrersData?.rows);
 
     const cities = (cityRes?.rows || []).map((row: any) => ({
       name: row.dimensionValues[0]?.value || "Chưa xác định",
@@ -1126,13 +1172,42 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
     }));
 
     const devices = (deviceRes?.rows || []).map((row: any) => {
-      const category = row.dimensionValues[0]?.value || "Desktop";
+      const category = row.dimensionValues[0]?.value || "desktop";
       const name = category === "desktop" ? "Máy tính" : category === "mobile" ? "Điện thoại" : "Máy tính bảng";
       return {
         name,
         value: Number(row.metricValues[0]?.value || 0),
       };
     });
+
+    const trafficQualityData = (trendRes?.rows || []).map((row: any, index: number) => {
+      const rawDim = row.dimensionValues[0]?.value || "";
+      let label = rawDim;
+      if (range === "today") {
+        label = `${rawDim}:00`;
+      } else if (rawDim.length === 8) {
+        label = `${rawDim.substring(6, 8)}/${rawDim.substring(4, 6)}`;
+      }
+      return {
+        date: label,
+        actualQuality: Number(row.metricValues[0]?.value || 0),
+        baselineQuality: Number(row.metricValues[1]?.value || 0),
+        dayIndex: index + 1,
+      };
+    });
+
+    const keywordsData = (keywordRes?.rows || [])
+      .map((row: any) => ({
+        query: row.dimensionValues[0]?.value || "Chưa có từ khóa",
+        clicks: Number(row.metricValues[0]?.value || 0),
+      }))
+      .filter((k: any) => k.query !== "(not set)" && k.query !== "(organic)"); // Sửa đổi: Đóng dấu kiểm duyệt kiểu dữ liệu k: any tường minh
+
+    // Định dạng Phân bổ bản đồ thế giới thật trong lịch sử (Cờ & Tổng lượt truy cập quá khứ)
+    const _countries = (countryRes?.rows || []).map((row: any) => ({
+      name: row.dimensionValues[0]?.value || "Chưa xác định",
+      value: Number(row.metricValues[0]?.value || 0),
+    }));
 
     const supabase = await createClient();
     const { count: customerCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
@@ -1171,10 +1246,10 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       return d.toISOString().split("T")[0];
     }).reverse();
 
-    const trafficQualityData = lastDaysRange.map((dateStr, index) => {
+    const backupTrafficQualityData = lastDaysRange.map((dateStr, index) => {
       const dayOrders = orders.filter((o: any) => o.created_at?.startsWith(dateStr)) || [];
       const actualSales = dayOrders.reduce((sum: number, o: any) => sum + Number(o.total), 0);
-      const baselineSales = 2000000;
+      const baselineSales = 8000000;
 
       const actualPercentage =
         baselineSales > 0 ? Number((((actualSales - baselineSales) / baselineSales) * 100).toFixed(1)) : 0;
@@ -1198,13 +1273,17 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       conversionRate,
       topPages,
       activeCustomers,
-      trafficQualityData,
+      trafficQualityData: trafficQualityData.length > 0 ? trafficQualityData : backupTrafficQualityData,
       sourcesData: sources,
       campaignsData: campaigns,
       referrersData: referrers,
-      citiesData: cities,
+      citiesData: cities, // Tải danh sách tỉnh thành thật từ GA4
       agesData: ages,
       devicesData: devices,
+      keywordsData,
+      realtimeVisitorsCount: uniqueVisitors,
+      realtimeData: trafficQualityData.length > 0 ? trafficQualityData : backupTrafficQualityData,
+      realtimeCountries: cities, // Đồng bộ: Trả mảng tỉnh thành thật xuống bản đồ
     };
   } catch (err) {
     console.warn("[GA4_FETCH_WARN] Lỗi kết nối GA4 API, kích hoạt chế độ tự phục hồi tất định:", err);
@@ -1214,7 +1293,7 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
 
     const { data: dbOrders } = await supabase
       .from("orders")
-      .select("id, total, created_at")
+      .select("id, total, created_at, customer_address")
       .neq("order_status", "Cancelled");
 
     const orders = dbOrders || [];
@@ -1354,6 +1433,24 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       },
     ];
 
+    // Bộ bóc tách thông minh 63 tỉnh thành Việt Nam động trực tiếp từ địa chỉ đơn hàng Supabase
+    const fallbackCitiesMap = new Map<string, number>();
+    orders.forEach((o: any) => {
+      const address = (o.customer_address || "").toLowerCase().trim();
+
+      for (const [, province] of Object.entries(PROVINCE_MAP)) {
+        if (province.searchTerms.some((term) => address.includes(term))) {
+          fallbackCitiesMap.set(province.name, (fallbackCitiesMap.get(province.name) || 0) + 1);
+          return; // Dừng quét sau khi khớp dòng đầu tiên của đơn hàng
+        }
+      }
+    });
+
+    const fallbackCities = Array.from(fallbackCitiesMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
     return {
       uniqueVisitors,
       totalSessions,
@@ -1362,12 +1459,16 @@ export async function getAnalyticsStats(range = "last-4-weeks", startDate?: stri
       topPages,
       activeCustomers,
       trafficQualityData,
-      sourcesData,
+      sourcesData: sourcesData,
       campaignsData: sourcesData,
       referrersData: sourcesData,
-      citiesData: [],
+      citiesData: fallbackCities,
       agesData: [],
       devicesData: [],
+      keywordsData: [],
+      realtimeVisitorsCount: uniqueVisitors,
+      realtimeData: trafficQualityData,
+      realtimeCountries: fallbackCities,
     };
   }
 }

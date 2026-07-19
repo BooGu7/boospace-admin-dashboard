@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PROVINCE_MAP } from "@/data/data_location"; // Nhập khẩu nguồn địa danh tập trung
 import { getAnalyticsStats } from "@/lib/repositories/order.repository";
 import { AnalyticsKpiStrip } from "./_components/analytics-kpi-strip";
 import { AnalyticsToolbar } from "./_components/analytics-toolbar";
@@ -19,6 +20,16 @@ interface PageProps {
     startDate?: string;
     endDate?: string;
   }>;
+}
+
+function getCityVietnameseName(cityName: string): string {
+  const clean = cityName.toLowerCase().trim();
+  for (const [, value] of Object.entries(PROVINCE_MAP)) {
+    if (value.searchTerms.some((term) => clean.includes(term))) {
+      return value.name;
+    }
+  }
+  return cityName;
 }
 
 export default async function Page({ searchParams }: PageProps) {
@@ -56,7 +67,7 @@ export default async function Page({ searchParams }: PageProps) {
               <TrafficQuality qualityData={stats.trafficQualityData} />
             </div>
             <div className="xl:col-span-5">
-              <RealtimeVisitors activeCustomers={stats.activeCustomers} />
+              <RealtimeVisitors liveCount={stats.realtimeVisitorsCount} citiesData={stats.citiesData || []} />
             </div>
           </div>
 
@@ -94,7 +105,7 @@ export default async function Page({ searchParams }: PageProps) {
                         <span className="size-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-bold">
                           {i + 1}
                         </span>
-                        {city.name}
+                        {getCityVietnameseName(city.name)}
                       </span>
                       <span className="text-sm font-extrabold text-slate-800 tabular-nums">{city.value} người</span>
                     </div>
@@ -148,21 +159,57 @@ export default async function Page({ searchParams }: PageProps) {
 
         {/* TAB 3: KÊNH TRUY CẬP */}
         <TabsContent value="acquisition" className="flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-bold text-slate-800">Hiệu suất kênh truyền thông thu nạp</CardTitle>
-              <CardDescription>
-                Chi tiết luồng phân tách kênh tiếp cận (Organic, Social, Direct) kéo traffic về xưởng.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TopTrafficSources
-                sources={stats.sourcesData}
-                campaigns={stats.campaignsData}
-                referrers={stats.referrersData}
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+            <div className="xl:col-span-7">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-bold text-slate-800">
+                    Hiệu suất kênh truyền thông thu nạp
+                  </CardTitle>
+                  <CardDescription>Chi tiết luồng phân tách kênh tiếp cận kéo traffic về xưởng.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TopTrafficSources
+                    sources={stats.sourcesData}
+                    campaigns={stats.campaignsData}
+                    referrers={stats.referrersData}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Từ khóa tìm kiếm SEO */}
+            <div className="xl:col-span-5">
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold text-slate-800">Từ khóa Google Search (SEO)</CardTitle>
+                  <CardDescription>
+                    Danh sách cụm từ khách hàng tìm kiếm trên Google để tiếp cận Boospace.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(stats.keywordsData || []).map((k: any, i: number) => (
+                      <div
+                        key={k.query}
+                        className="flex items-center justify-between border-b pb-2.5 last:border-0 last:pb-0"
+                      >
+                        <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={k.query}>
+                          {i + 1}. {k.query}
+                        </span>
+                        <span className="text-xs font-black text-blue-600 tabular-nums">{k.clicks} lượt click</span>
+                      </div>
+                    ))}
+                    {(!stats.keywordsData || stats.keywordsData.length === 0) && (
+                      <div className="text-center py-12 text-muted-foreground text-xs leading-relaxed">
+                        Chưa ghi nhận từ khóa tìm kiếm tự nhiên thực tế nào phát sinh (Chưa liên kết GSC).
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* TAB 4: TƯƠNG TÁC */}
