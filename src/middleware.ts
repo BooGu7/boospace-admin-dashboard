@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  // Cho phép tất cả các đường dẫn API Webhook chạy trực tiếp không qua kiểm tra Session
+  // Bỏ qua kiểm tra đăng nhập cho tất cả các yêu cầu API Webhook
   if (request.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
