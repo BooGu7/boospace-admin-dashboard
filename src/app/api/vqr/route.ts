@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const VIETQR_USERNAME = process.env.VIETQR_USERNAME || "boospace7";
-const VIETQR_PASSWORD = process.env.VIETQR_PASSWORD;
+// Cấu hình tài khoản đăng nhập nhận thông báo từ VietQR
+const VIETQR_USERNAME = process.env.VIETQR_USERNAME || "vqr_usr_iR9tSbCphj";
+const VIETQR_PASSWORD = process.env.VIETQR_PASSWORD || "vqr_pwd_fN1FyYTRFahAQnup";
 
 /**
  * Trích xuất mã đơn hàng dạng ORD-XXXXX hoặc BOO-XXXXX từ nội dung chuyển khoản
@@ -16,18 +17,18 @@ function extractOrderCode(memo: string): string | null {
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Xác thực bảo mật Basic Auth từ VietQR
+    // 1. Kiểm tra xác thực gói tin bằng Basic Auth
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return NextResponse.json({ success: false, message: "Yêu cầu thông tin xác thực" }, { status: 401 });
+      return NextResponse.json({ success: false, message: "Thiếu thông tin xác thực" }, { status: 401 });
     }
 
     const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":");
     const username = auth[0];
     const password = auth[1];
 
-    if (username !== VIETQR_USERNAME || (VIETQR_PASSWORD && password !== VIETQR_PASSWORD)) {
-      return NextResponse.json({ success: false, message: "Thông tin bảo mật không hợp lệ" }, { status: 403 });
+    if (username !== VIETQR_USERNAME || password !== VIETQR_PASSWORD) {
+      return NextResponse.json({ success: false, message: "Xác thực không hợp lệ" }, { status: 403 });
     }
 
     // 2. Phân giải gói dữ liệu giao dịch từ VietQR
@@ -58,22 +59,15 @@ export async function POST(req: NextRequest) {
     if (order.payment_status === "Paid") {
       return NextResponse.json({
         success: true,
-        message: "Đơn hàng đã được xác nhận trước đó",
+        message: "Đơn hàng đã được thanh toán trước đó",
       });
     }
 
     if (amount < Number(order.total)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Số tiền chuyển khoản nhỏ hơn tổng giá trị đơn hàng",
-        },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Số tiền chuyển khoản chưa đủ" }, { status: 400 });
     }
 
     // 4. Ghi nhận nhật ký biến động số dư vào bảng transactions
-    // (Postgres Trigger trigger_auto_sync_order_payment sẽ tự động chạy để cập nhật orders.payment_status = 'Paid')
     const { error: insertTxError } = await supabase.from("transactions").insert({
       order_id: order.id,
       order_code: orderCode,
@@ -89,7 +83,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (insertTxError) {
-      // Nếu đã tạo giao dịch rồi thì cập nhật trạng thái đơn hàng trực tiếp làm phương án dự phòng
+      // Phương án dự phòng: Cập nhật trực tiếp bảng orders nếu tạo transaction bị trùng mã
       await supabase
         .from("orders")
         .update({
@@ -103,7 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Cập nhật giao dịch thành công cho đơn hàng ${orderCode}`,
-      reference_number: referenceNumber,
+      transaction_id: referenceNumber,
     });
   } catch (error: any) {
     console.error("[VIETQR_WEBHOOK_ERROR]", error);
