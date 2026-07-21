@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic"; // Ép Next.js xử lý yêu cầu động thời gian thực
+
 // Cấu hình tài khoản đăng nhập nhận thông báo từ VietQR
 const VIETQR_USERNAME = process.env.VIETQR_USERNAME || "vqr_usr_iR9tSbCphj";
 const VIETQR_PASSWORD = process.env.VIETQR_PASSWORD || "vqr_pwd_fN1FyYTRFahAQnup";
