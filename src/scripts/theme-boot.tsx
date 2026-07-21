@@ -108,5 +108,11 @@ export function ThemeBootScript() {
     })();
   `;
 
-  return <script dangerouslySetInnerHTML={{ __html: code }} />;
+  return (
+    <script
+      id="theme-boot" // Đã bổ sung ID duy nhất để React 19 nhận diện thành công
+      suppressHydrationWarning // Đã bổ sung để dập tắt hoàn toàn lỗi cảnh báo Hydration tĩnh trên trình duyệt
+      dangerouslySetInnerHTML={{ __html: code }}
+    />
+  );
 }

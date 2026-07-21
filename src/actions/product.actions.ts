@@ -147,6 +147,7 @@ export async function uploadProductImage(formData: FormData) {
     throw new Error(error instanceof Error ? error.message : "Lỗi upload");
   }
 }
+
 /**
  * CẬP NHẬT NHANH SỐ LƯỢNG TỒN KHO (Dùng cho trang Inventory)
  */
@@ -172,52 +173,20 @@ export async function updateProductStockAction(id: string, stock: number) {
     return { success: false, error: error.message };
   }
 }
+
 /**
- * LẤY DANH SÁCH CUỘN NHỰA IN TỪ SUPABASE SETTINGS
+ * LẤY DANH SÁCH CUỘN NHỰA IN TỪ SUPABASE SETTINGS (Không mock data)
  */
 export async function getMaterialsAction() {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.from("settings").select("value").eq("key", "materials").maybeSingle();
 
-    const defaultMaterials = [
-      {
-        id: "mat-1",
-        name: "Sợi nhựa PLA Boo Craft Đỏ",
-        material: "PLA",
-        remainingWeightGrams: 3200,
-        costPerKg: 350000,
-      },
-      {
-        id: "mat-2",
-        name: "Sợi nhựa PLA Boo Craft Trắng",
-        material: "PLA",
-        remainingWeightGrams: 8400,
-        costPerKg: 350000,
-      },
-      {
-        id: "mat-3",
-        name: "Sợi nhựa PETG Chịu Lực Xám",
-        material: "PETG",
-        remainingWeightGrams: 1100,
-        costPerKg: 400000,
-      },
-      {
-        id: "mat-4",
-        name: "Nhựa Resin UV Đen Chi Tiết",
-        material: "Resin",
-        remainingWeightGrams: 700,
-        costPerKg: 750000,
-      },
-    ];
-
     if (error || !data) {
-      // Nếu chưa có, tự động tạo giá trị mặc định khởi tạo
-      await supabase.from("settings").insert([{ key: "materials", value: defaultMaterials }]);
-      return defaultMaterials;
+      return [];
     }
 
-    return data.value as typeof defaultMaterials;
+    return (data.value || []) as any[];
   } catch (error: any) {
     console.error("[GET_MATERIALS_ERROR]", error);
     return [];
@@ -231,6 +200,43 @@ export async function saveMaterialsAction(materials: any[]) {
   try {
     const supabase = await createClient();
     const { error } = await supabase.from("settings").update({ value: materials }).eq("key", "materials");
+
+    if (error) throw error;
+    revalidatePath("/dashboard/inventory");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * LẤY ĐỊNH MỨC GIÁ ĐIỆN QUỐC GIA TỪ SUPABASE SETTINGS (Không dùng cứng trong code)
+ */
+export async function getElectricityRateAction() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("settings").select("value").eq("key", "electricity_rate").maybeSingle();
+
+    if (error || !data) {
+      return 3000; // Giá mặc định phòng vệ nếu trống DB
+    }
+
+    return Number(data.value);
+  } catch (error: any) {
+    console.error("[GET_ELECTRICITY_RATE_ERROR]", error);
+    return 3000;
+  }
+}
+
+/**
+ * LƯU ĐỊNH MỨC GIÁ ĐIỆN QUỐC GIA VÀO SUPABASE SETTINGS
+ */
+export async function saveElectricityRateAction(rate: number) {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("settings")
+      .upsert({ key: "electricity_rate", value: rate }, { onConflict: "key" });
 
     if (error) throw error;
     revalidatePath("/dashboard/inventory");

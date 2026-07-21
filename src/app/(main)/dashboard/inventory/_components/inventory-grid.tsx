@@ -12,13 +12,25 @@ import {
   RefreshCw,
   Save,
   Search,
+  Trash2,
   XCircle,
   Zap,
 } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 import { toast } from "sonner";
-import { saveMaterialsAction, updateProductStockAction } from "@/actions/product.actions";
+import { saveElectricityRateAction, saveMaterialsAction, updateProductStockAction } from "@/actions/product.actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,25 +53,63 @@ interface Props {
   initialProducts: any[];
   categories: any[];
   initialMaterials: any[];
+  initialElectricityRate: number;
 }
 
-export function InventoryGrid({ initialProducts, categories, initialMaterials }: Props) {
+const formatPriceString = (val: number | string) => {
+  if (val === undefined || val === null) return "0";
+  const num = typeof val === "string" ? parseInt(val.replace(/\D/g, ""), 10) : val;
+  if (Number.isNaN(num)) return "0";
+  return new Intl.NumberFormat("en-US").format(num);
+};
+
+const parsePriceString = (val: string) => {
+  const num = parseInt(val.replace(/\D/g, ""), 10);
+  return Number.isNaN(num) ? 0 : num;
+};
+
+function getStockBadge(stock: number) {
+  if (stock === 0) {
+    return <Badge variant="destructive">Hết hàng</Badge>;
+  }
+  if (stock <= 5) {
+    return (
+      <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
+        Tồn thấp
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-500/10">
+      An toàn
+    </Badge>
+  );
+}
+
+export function InventoryGrid({ initialProducts, categories, initialMaterials, initialElectricityRate }: Props) {
   const [products, setProducts] = React.useState(initialProducts);
   const [materials, setMaterials] = React.useState(initialMaterials);
   const [search, setSearch] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("all");
   const [stockStatus, setStockStatus] = React.useState("all");
 
-  // Trạng thái thêm mới cuộn nhựa
+  const [electricityRate, setElectricityRate] = React.useState(initialElectricityRate);
+  const [isEditingElectricity, setIsEditingElectricity] = React.useState(false);
+  const [tempElectricity, setTempElectricity] = React.useState(initialElectricityRate);
+
   const [openAddMaterial, setOpenAddMaterial] = React.useState(false);
   const [newMatName, setNewMatName] = React.useState("");
   const [newMatType, setNewMatType] = React.useState("PLA");
-  const [newMatWeight, setNewMatWeight] = React.useState(1000);
-  const [newMatCost, setNewMatCost] = React.useState(350000);
+  const [newSpoolWeight, setNewSpoolWeight] = React.useState(1000);
+  const [newCostPerSpool, setNewCostPerSpool] = React.useState(350000);
+  const [newSpoolCount, setNewSpoolCount] = React.useState(1);
+  const [newColorName, setNewColorName] = React.useState("Đỏ");
+  const [newColorHex, setNewColorHex] = React.useState("#dc2626");
 
-  // Trạng thái lưu trữ tạm số lượng thay đổi
+  const [deletingMatId, setDeletingMatId] = React.useState<string | null>(null);
+
   const [editingStocks, setEditingStocks] = React.useState<Record<string, number>>({});
-  const [editingMaterials, setEditingMaterials] = React.useState<Record<string, number>>({});
+  const [editingMaterialsData, setEditingMaterialsData] = React.useState<Record<string, any>>({});
   const [isPending, startTransition] = React.useTransition();
 
   React.useEffect(() => {
@@ -70,26 +120,70 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
     setMaterials(initialMaterials);
   }, [initialMaterials]);
 
-  // THỐNG KÊ CHỈ SỐ KHO SẢN PHẨM
+  React.useEffect(() => {
+    setElectricityRate(initialElectricityRate);
+    setTempElectricity(initialElectricityRate);
+  }, [initialElectricityRate]);
+
+  const saveElectricityRate = () => {
+    startTransition(async () => {
+      const res = await saveElectricityRateAction(tempElectricity);
+      if (res.success) {
+        setElectricityRate(tempElectricity);
+        setIsEditingElectricity(false);
+        toast.success("Đã cập nhật định mức giá điện lên Supabase!");
+      } else {
+        toast.error(res.error || "Không thể lưu giá điện lên Supabase");
+      }
+    });
+  };
+
+  const isTemplateProduct = React.useCallback((p: any) => {
+    const skuLower = (p.sku || "").toLowerCase();
+    const nameLower = (p.name || "").toLowerCase();
+    return (
+      skuLower === "boo-template-01" ||
+      skuLower === "boo-template-02" ||
+      skuLower === "boo-template-03" ||
+      skuLower.includes("boo-template") ||
+      nameLower.includes("boo-template") ||
+      nameLower.includes("template 1") ||
+      nameLower.includes("template 2") ||
+      nameLower.includes("template 3")
+    );
+  }, []);
+
   const stats = React.useMemo(() => {
-    const totalSKUs = products.length;
-    const outOfStock = products.filter((p) => Number(p.stock || 0) === 0).length;
-    const lowStock = products.filter((p) => Number(p.stock || 0) > 0 && Number(p.stock || 0) <= 5).length;
-    const totalUnits = products.reduce((sum, p) => sum + Number(p.stock || 0), 0);
+    const activeProducts = products.filter((p) => !isTemplateProduct(p));
+    const totalSKUs = activeProducts.length;
+    const outOfStock = activeProducts.filter((p) => Number(p.stock || 0) === 0).length;
+    const lowStock = activeProducts.filter((p) => Number(p.stock || 0) > 0 && Number(p.stock || 0) <= 5).length;
+    const totalUnits = activeProducts.reduce((sum, p) => sum + Number(p.stock || 0), 0);
 
     return { totalSKUs, outOfStock, lowStock, totalUnits };
-  }, [products]);
+  }, [products, isTemplateProduct]);
 
-  // THỐNG KÊ CHỈ SỐ VẬT LIỆU
   const materialStats = React.useMemo(() => {
-    const totalWeight = materials.reduce((sum, m) => sum + m.remainingWeightGrams, 0) / 1000;
-    const lowMaterials = materials.filter((m) => m.remainingWeightGrams <= 1500).length;
+    const totalWeight =
+      materials.reduce((sum, m) => {
+        const count = m.spoolCount !== undefined ? m.spoolCount : m.quantity !== undefined ? m.quantity : 1;
+        const weight = m.spoolWeightGrams !== undefined ? m.spoolWeightGrams : 1000;
+        return sum + count * weight;
+      }, 0) / 1000;
+
+    const lowMaterials = materials.filter((m) => {
+      const count = m.spoolCount !== undefined ? m.spoolCount : m.quantity !== undefined ? m.quantity : 1;
+      const weight = m.spoolWeightGrams !== undefined ? m.spoolWeightGrams : 1000;
+      return count * weight <= 1500;
+    }).length;
+
     return { totalWeight, lowMaterials };
   }, [materials]);
 
-  // LỌC SẢN PHẨM THEO TÌM KIẾM & BỘ LỌC
   const filteredProducts = React.useMemo(() => {
     return products.filter((product) => {
+      if (isTemplateProduct(product)) return false;
+
       const matchSearch =
         product.name.toLowerCase().includes(search.toLowerCase()) ||
         product.sku?.toLowerCase().includes(search.toLowerCase());
@@ -108,9 +202,8 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
 
       return matchSearch && matchCategory && matchStatus;
     });
-  }, [products, search, selectedCategory, stockStatus, editingStocks]);
+  }, [products, search, selectedCategory, stockStatus, editingStocks, isTemplateProduct]);
 
-  // THAY ĐỔI NHANH TRẠNG THÁI SỐ LƯỢNG TRÊN GIAO DIỆN (CHƯA LƯU DB)
   const adjustStock = (productId: string, currentStock: number, delta: number) => {
     const tempValue = editingStocks[productId] ?? currentStock;
     const newValue = Math.max(0, tempValue + delta);
@@ -124,21 +217,19 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
     }
   };
 
-  // Tăng/giảm khối lượng nhựa cuộn (Grams)
-  const adjustMaterialWeight = (matId: string, currentGrams: number, delta: number) => {
-    const tempValue = editingMaterials[matId] ?? currentGrams;
-    const newValue = Math.max(0, tempValue + delta);
-    setEditingMaterials((prev) => ({ ...prev, [matId]: newValue }));
+  const handleMaterialFieldChange = (matId: string, field: string, value: any) => {
+    setEditingMaterialsData((prev) => {
+      const current = prev[matId] || {};
+      return {
+        ...prev,
+        [matId]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
   };
 
-  const handleMaterialInputChange = (matId: string, val: string) => {
-    const num = parseInt(val, 10);
-    if (!Number.isNaN(num) && num >= 0) {
-      setEditingMaterials((prev) => ({ ...prev, [matId]: num }));
-    }
-  };
-
-  // LƯU SỐ LƯỢNG TỒN KHO MỚI VÀO SUPABASE
   const saveStock = (productId: string) => {
     const newValue = editingStocks[productId];
     if (newValue === undefined) return;
@@ -159,18 +250,44 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
     });
   };
 
-  // Lưu nhanh cập nhật cuộn nhựa lên Supabase Settings
-  const saveMaterial = (matId: string) => {
-    const newValue = editingMaterials[matId];
-    if (newValue === undefined) return;
+  const saveMaterialRow = (matId: string) => {
+    const editData = editingMaterialsData[matId];
+    if (!editData) return;
 
     startTransition(async () => {
-      const updatedMaterials = materials.map((m) => (m.id === matId ? { ...m, remainingWeightGrams: newValue } : m));
+      const updatedMaterials = materials.map((m) => {
+        if (m.id === matId) {
+          const costSpool = editData.costPerSpool !== undefined ? editData.costPerSpool : (m.costPerSpool ?? 350000);
+          const spoolWeight =
+            editData.spoolWeightGrams !== undefined ? editData.spoolWeightGrams : (m.spoolWeightGrams ?? 1000);
+          const spoolCount =
+            editData.spoolCount !== undefined ? editData.spoolCount : (m.spoolCount ?? m.quantity ?? 1);
+          const colorName = editData.colorName !== undefined ? editData.colorName : (m.colorName ?? "Chưa rõ");
+          const colorHex = editData.colorHex !== undefined ? editData.colorHex : (m.colorHex ?? "#cccccc");
+
+          const remainingWeight = spoolCount * spoolWeight;
+          const costPerKg = Math.round((costSpool / (spoolWeight || 1000)) * 1000);
+
+          return {
+            ...m,
+            costPerSpool: costSpool,
+            spoolWeightGrams: spoolWeight,
+            spoolCount: spoolCount,
+            quantity: spoolCount,
+            colorName: colorName,
+            colorHex: colorHex,
+            remainingWeightGrams: remainingWeight,
+            costPerKg: costPerKg,
+          };
+        }
+        return m;
+      });
+
       const res = await saveMaterialsAction(updatedMaterials);
       if (res.success) {
-        toast.success("Đã cập nhật khối lượng vật tư lên Supabase!");
+        toast.success("Đã lưu thông tin vật liệu lên Supabase!");
         setMaterials(updatedMaterials);
-        setEditingMaterials((prev) => {
+        setEditingMaterialsData((prev) => {
           const next = { ...prev };
           delete next[matId];
           return next;
@@ -181,7 +298,6 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
     });
   };
 
-  // Thêm mới cuộn nhựa lưu vào Supabase
   const handleAddMaterial = () => {
     if (!newMatName.trim()) {
       toast.error("Vui lòng điền tên cuộn nhựa");
@@ -189,12 +305,21 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
     }
 
     startTransition(async () => {
+      const calculatedCostPerKg = Math.round((newCostPerSpool / (newSpoolWeight || 1000)) * 1000);
+      const calculatedRemainingWeight = newSpoolCount * newSpoolWeight;
+
       const newMat = {
         id: `mat-${Math.random().toString(36).slice(2)}`,
         name: newMatName,
         material: newMatType,
-        remainingWeightGrams: newMatWeight,
-        costPerKg: newMatCost,
+        spoolWeightGrams: newSpoolWeight,
+        costPerSpool: newCostPerSpool,
+        spoolCount: newSpoolCount,
+        quantity: newSpoolCount,
+        colorName: newColorName,
+        colorHex: newColorHex,
+        remainingWeightGrams: calculatedRemainingWeight,
+        costPerKg: calculatedCostPerKg,
       };
 
       const updatedMaterials = [...materials, newMat];
@@ -204,41 +329,33 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
         toast.success("Đã thêm mới cuộn nhựa in lên Supabase!");
         setMaterials(updatedMaterials);
         setOpenAddMaterial(false);
-        // Reset form
         setNewMatName("");
         setNewMatType("PLA");
-        setNewMatWeight(1000);
-        setNewMatCost(350000);
+        setNewSpoolWeight(1000);
+        setNewCostPerSpool(350000);
+        setNewSpoolCount(1);
+        setNewColorName("Đỏ");
+        setNewColorHex("#dc2626");
       } else {
         toast.error(res.error || "Có lỗi xảy ra khi lưu");
       }
     });
   };
 
-  const getStockBadge = (stock: number) => {
-    if (stock === 0) {
-      return <Badge variant="destructive">Hết hàng</Badge>;
-    }
-    if (stock <= 5) {
-      return (
-        <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
-          Tồn thấp
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-500/10">
-        An toàn
-      </Badge>
-    );
-  };
+  const handleDeleteMaterial = (matId: string) => {
+    startTransition(async () => {
+      const updatedMaterials = materials.filter((m) => m.id !== matId);
+      const res = await saveMaterialsAction(updatedMaterials);
 
-  const formatVND = (val: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(val);
+      if (res.success) {
+        toast.success("Đã xóa cuộn nhựa khỏi hệ thống");
+        setMaterials(updatedMaterials);
+        setDeletingMatId(null);
+      } else {
+        toast.error(res.error || "Có lỗi xảy ra khi xóa");
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -252,11 +369,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
           </TabsTrigger>
         </TabsList>
 
-        {/* ==========================================
-            TAB 1: SẢN PHẨM HOÀN THIỆN
-            ========================================== */}
         <TabsContent value="products" className="space-y-6">
-          {/* Thẻ KPI */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -303,7 +416,6 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
             </Card>
           </div>
 
-          {/* Công cụ tìm kiếm */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <div className="relative w-full sm:w-72 shrink-0">
@@ -344,7 +456,6 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
             </div>
           </div>
 
-          {/* Bảng sản phẩm */}
           <Card className="shadow-sm">
             <CardContent className="p-0">
               <Table>
@@ -372,6 +483,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                                 src={product.images?.[0] || "https://placehold.co/100x100?text=No+Image"}
                                 alt={product.name}
                                 fill
+                                sizes="48px"
                                 className="object-cover"
                               />
                             </div>
@@ -461,11 +573,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
           </Card>
         </TabsContent>
 
-        {/* ==========================================
-            TAB 2: QUẢN LÝ CUỘN NHỰA IN & KHỐI LƯỢNG
-            ========================================== */}
         <TabsContent value="materials" className="space-y-6">
-          {/* KPI Vật tư */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Card className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -474,7 +582,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-900">{`${materialStats.totalWeight.toFixed(1)} kg`}</div>
-                <p className="text-xs text-muted-foreground">PLA, PETG & nhựa lỏng Resin UV</p>
+                <p className="text-xs text-muted-foreground">Tổng trữ lượng khả dụng thực tế</p>
               </CardContent>
             </Card>
 
@@ -485,7 +593,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600">{materialStats.lowMaterials} loại</div>
-                <p className="text-xs text-muted-foreground">Cần chuẩn bị mua cuộn mới</p>
+                <p className="text-xs text-muted-foreground">Khối lượng còn lại ở mức báo động</p>
               </CardContent>
             </Card>
 
@@ -495,19 +603,61 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                 <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">3.000 đ/kWh</div>
-                <p className="text-xs text-muted-foreground">Áp dụng trong bộ hạch toán Máy tính 3D</p>
+                {isEditingElectricity ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        value={tempElectricity}
+                        onChange={(e) => setTempElectricity(Number(e.target.value))}
+                        className="h-8 font-bold font-mono text-sm w-28"
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">đ/kWh</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-[10px] text-emerald-600 hover:bg-emerald-50 px-2"
+                        onClick={saveElectricityRate}
+                      >
+                        Lưu
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-[10px] text-red-500 hover:bg-red-50 px-2"
+                        onClick={() => setIsEditingElectricity(false)}
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-yellow-600">{electricityRate.toLocaleString()} đ/kWh</div>
+                      <p className="text-xs text-muted-foreground">Bộ hạch toán máy tính 3D</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-slate-500 hover:bg-slate-100 px-2"
+                      onClick={() => setIsEditingElectricity(true)}
+                    >
+                      Sửa
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Công cụ thêm vật liệu in mới */}
           <div className="flex items-center justify-between border-b pb-4">
             <span className="text-sm text-muted-foreground font-medium">
-              Danh sách các cuộn nhựa phục vụ gia công cắt lớp in
+              Danh sách các cuộn nhựa phục vụ gia công in
             </span>
 
-            {/* Dialog Thêm cuộn nhựa */}
             <Dialog open={openAddMaterial} onOpenChange={setOpenAddMaterial}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black">
@@ -528,7 +678,7 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                     </Label>
                     <Input
                       id="mat-name"
-                      placeholder="Sợi nhựa PLA Boo Craft Đen"
+                      placeholder="Bambu Lab PLA Matte"
                       value={newMatName}
                       onChange={(e) => setNewMatName(e.target.value)}
                     />
@@ -549,17 +699,58 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Khối lượng (Grams)</Label>
+                      <Label className="text-xs">Mức tịnh cuộn / Grams</Label>
                       <Input
                         type="number"
-                        value={newMatWeight}
-                        onChange={(e) => setNewMatWeight(Number(e.target.value))}
+                        value={newSpoolWeight}
+                        onChange={(e) => setNewSpoolWeight(Number(e.target.value))}
                       />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Đơn giá nhập / kg (VND)</Label>
-                    <Input type="number" value={newMatCost} onChange={(e) => setNewMatCost(Number(e.target.value))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Tên màu sắc</Label>
+                      <Input
+                        placeholder="Đỏ Basic"
+                        value={newColorName}
+                        onChange={(e) => setNewColorName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Bảng màu</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="text"
+                          className="h-9 text-xs"
+                          value={newColorHex}
+                          onChange={(e) => setNewColorHex(e.target.value)}
+                        />
+                        <input
+                          type="color"
+                          className="size-9 rounded cursor-pointer border p-0 shrink-0 bg-transparent border-slate-200"
+                          value={newColorHex}
+                          onChange={(e) => setNewColorHex(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Đơn giá nhập / Cuộn (VND)</Label>
+                      <Input
+                        type="text"
+                        value={formatPriceString(newCostPerSpool)}
+                        onChange={(e) => setNewCostPerSpool(parsePriceString(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Số lượng cuộn nhập</Label>
+                      <Input
+                        type="number"
+                        value={newSpoolCount}
+                        onChange={(e) => setNewSpoolCount(Number(e.target.value))}
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -578,14 +769,13 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
             </Dialog>
           </div>
 
-          {/* Bảng chi tiết cuộn nhựa in */}
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Coins className="h-5 w-5 text-primary" /> Chi tiết đơn giá & Trọng lượng cuộn nhựa in
               </CardTitle>
               <CardDescription>
-                Cập nhật số gram nhựa còn lại sau mỗi lệnh cắt lớp (Slice) để máy tính 3D lấy dữ liệu thực tế.
+                Cập nhật số cuộn và trọng lượng tịnh để tự động xác định tổng khối lượng thực tế khả dụng.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -593,17 +783,36 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                 <TableHeader className="bg-muted/15">
                   <TableRow>
                     <TableHead className="py-4 pl-6 font-semibold">Tên cuộn nhựa in</TableHead>
-                    <TableHead className="font-semibold text-center">Loại chất liệu</TableHead>
-                    <TableHead className="font-semibold text-right">Đơn giá nhập / kg</TableHead>
-                    <TableHead className="font-semibold text-center w-[220px]">Số lượng nhựa thực tế (Grams)</TableHead>
+                    <TableHead className="font-semibold text-center">Chất liệu</TableHead>
+                    <TableHead className="font-semibold text-center">Màu sắc</TableHead>
+                    <TableHead className="font-semibold text-right">Đơn giá / Cuộn</TableHead>
+                    <TableHead className="font-semibold text-right">Mức tịnh / Cuộn</TableHead>
+                    <TableHead className="font-semibold text-center w-[120px]">Số lượng cuộn</TableHead>
+                    <TableHead className="font-semibold text-right">Tổng khối lượng</TableHead>
                     <TableHead className="font-semibold text-center">Tình trạng</TableHead>
-                    <TableHead className="font-semibold text-right pr-6">Hành động nhanh</TableHead>
+                    <TableHead className="font-semibold text-right pr-6">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {materials.map((mat) => {
-                    const isEditing = editingMaterials[mat.id] !== undefined;
-                    const displayGrams = editingMaterials[mat.id] ?? mat.remainingWeightGrams;
+                    const editData = editingMaterialsData[mat.id] || {};
+                    const isEditing = editingMaterialsData[mat.id] !== undefined;
+
+                    const displayCostSpool =
+                      editData.costPerSpool !== undefined ? editData.costPerSpool : (mat.costPerSpool ?? 350000);
+                    const displaySpoolWeight =
+                      editData.spoolWeightGrams !== undefined
+                        ? editData.spoolWeightGrams
+                        : (mat.spoolWeightGrams ?? 1000);
+                    const displaySpoolCount =
+                      editData.spoolCount !== undefined ? editData.spoolCount : (mat.spoolCount ?? mat.quantity ?? 1);
+                    const displayColorName =
+                      editData.colorName !== undefined ? editData.colorName : (mat.colorName ?? "Chưa rõ");
+                    const displayColorHex =
+                      editData.colorHex !== undefined ? editData.colorHex : (mat.colorHex ?? "#cccccc");
+
+                    const displayTotalWeight = displaySpoolCount * displaySpoolWeight;
+                    const displayCostSpoolFormatted = formatPriceString(displayCostSpool);
 
                     return (
                       <TableRow key={mat.id} className="hover:bg-muted/20">
@@ -613,37 +822,70 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                           <Badge variant="outline">{mat.material}</Badge>
                         </TableCell>
 
-                        <TableCell className="text-right font-bold text-blue-900">{formatVND(mat.costPerKg)}</TableCell>
-
                         <TableCell className="text-center align-middle">
-                          <div className="flex items-center justify-center gap-1.5 mx-auto">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7 rounded-md"
-                              onClick={() => adjustMaterialWeight(mat.id, mat.remainingWeightGrams, -100)}
-                            >
-                              <Minus className="h-3.5 w-3.5" />
-                            </Button>
-                            <Input
-                              type="number"
-                              className="h-7 w-20 text-center font-bold font-mono text-sm p-1 rounded-md"
-                              value={displayGrams}
-                              onChange={(e) => handleMaterialInputChange(mat.id, e.target.value)}
+                          <div className="flex items-center gap-1.5 justify-center min-w-[150px]">
+                            <span
+                              className="size-3.5 rounded-full border border-slate-200 shadow-xs shrink-0"
+                              style={{ backgroundColor: displayColorHex }}
                             />
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7 rounded-md"
-                              onClick={() => adjustMaterialWeight(mat.id, mat.remainingWeightGrams, 100)}
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
+                            <Input
+                              type="text"
+                              className="h-7 w-20 text-xs font-semibold p-1"
+                              value={displayColorName}
+                              onChange={(e) => handleMaterialFieldChange(mat.id, "colorName", e.target.value)}
+                            />
+                            <input
+                              type="color"
+                              className="size-6 rounded cursor-pointer border p-0 shrink-0 bg-transparent border-slate-200"
+                              value={displayColorHex}
+                              onChange={(e) => handleMaterialFieldChange(mat.id, "colorHex", e.target.value)}
+                            />
                           </div>
                         </TableCell>
 
+                        <TableCell className="text-right">
+                          <div className="flex justify-end">
+                            <Input
+                              type="text"
+                              className="h-7 w-28 text-right font-bold text-blue-950 font-mono text-xs p-1"
+                              value={displayCostSpoolFormatted}
+                              onChange={(e) =>
+                                handleMaterialFieldChange(mat.id, "costPerSpool", parsePriceString(e.target.value))
+                              }
+                            />
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex justify-end">
+                            <Input
+                              type="number"
+                              className="h-7 w-20 text-right font-bold text-slate-800 font-mono text-xs p-1"
+                              value={displaySpoolWeight}
+                              onChange={(e) =>
+                                handleMaterialFieldChange(mat.id, "spoolWeightGrams", Number(e.target.value))
+                              }
+                            />
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <Input
+                              type="number"
+                              className="h-7 w-16 text-center font-bold text-slate-800 font-mono text-xs p-1"
+                              value={displaySpoolCount}
+                              onChange={(e) => handleMaterialFieldChange(mat.id, "spoolCount", Number(e.target.value))}
+                            />
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-right font-black text-blue-900 text-xs">
+                          {`${displayTotalWeight.toLocaleString()} g`}
+                        </TableCell>
+
                         <TableCell className="text-center align-middle">
-                          {displayGrams <= 1500 ? (
+                          {displayTotalWeight <= 1500 ? (
                             <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
                               Sắp hết
                             </Badge>
@@ -653,18 +895,68 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
                         </TableCell>
 
                         <TableCell className="text-right pr-6 align-middle">
-                          {isEditing ? (
-                            <Button
-                              size="sm"
-                              className="h-7 gap-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                              onClick={() => saveMaterial(mat.id)}
+                          <div className="flex items-center justify-end gap-2">
+                            {isEditing ? (
+                              <Button
+                                size="sm"
+                                className="h-7 gap-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5"
+                                onClick={() => saveMaterialRow(mat.id)}
+                                disabled={isPending}
+                              >
+                                {isPending ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Save className="h-3 w-3" />
+                                )}
+                                Lưu
+                              </Button>
+                            ) : null}
+
+                            <AlertDialog
+                              open={deletingMatId === mat.id}
+                              onOpenChange={(open) => setDeletingMatId(open ? mat.id : null)}
                             >
-                              <Save className="h-3 w-3" />
-                              Lưu nhanh
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Không đổi</span>
-                          )}
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 px-2"
+                                  disabled={isPending}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Xác nhận xóa cuộn nhựa?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Hành động này không thể hoàn tác. Cuộn nhựa "{mat.name}" sẽ bị xóa vĩnh viễn khỏi hệ
+                                    thống kho.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel disabled={isPending}>Hủy</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleDeleteMaterial(mat.id);
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={isPending}
+                                  >
+                                    {isPending ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Đang xóa...
+                                      </>
+                                    ) : (
+                                      "Xác nhận xóa"
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -679,7 +971,6 @@ export function InventoryGrid({ initialProducts, categories, initialMaterials }:
   );
 }
 
-// Hàm bổ trợ render Spinner
 function Loader2({ className }: { className?: string }) {
   return <RefreshCw className={`${className} animate-spin`} />;
 }

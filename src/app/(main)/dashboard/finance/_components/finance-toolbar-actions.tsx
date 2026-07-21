@@ -26,8 +26,8 @@ export function FinanceToolbarActions({ stats, settings }: Props) {
   const [openSettings, setOpenSettings] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
-  // Khởi tạo trạng thái form cấu hình lấy từ Supabase
-  const [payosAcc, setPayosAcc] = React.useState(settings.gateways[0]?.account || "");
+  // Khởi tạo trạng thái form cấu hình lấy từ Supabase (mặc định ACB: 2077867)
+  const [payosAcc, setPayosAcc] = React.useState(settings.gateways[0]?.account || "2077867");
   const [momoAcc, setMomoAcc] = React.useState(settings.gateways[1]?.account || "");
   const [paypalAcc, setPayPalAcc] = React.useState(settings.gateways[2]?.account || "");
 
@@ -37,7 +37,7 @@ export function FinanceToolbarActions({ stats, settings }: Props) {
 
   const [weeklyKpi, setWeeklyKpi] = React.useState(settings.target_weekly_kpi || 10000000);
 
-  // KÍCH HOẠT XUẤT FILE JSON THẬT 100%
+  // Xuất tệp tin dữ liệu tài chính JSON
   const handleExportData = () => {
     try {
       const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(stats, null, 2))}`;
@@ -60,7 +60,7 @@ export function FinanceToolbarActions({ stats, settings }: Props) {
     startTransition(async () => {
       const updated: FinanceSettings = {
         gateways: [
-          { ...settings.gateways[0], account: payosAcc },
+          { ...settings.gateways[0], account: payosAcc, bank_code: "ACB" },
           { ...settings.gateways[1], account: momoAcc },
           { ...settings.gateways[2], account: paypalAcc },
         ],
@@ -84,7 +84,7 @@ export function FinanceToolbarActions({ stats, settings }: Props) {
 
   return (
     <div className="flex items-center gap-2 shrink-0 justify-end w-full sm:w-auto">
-      {/* Nút Xuất JSON thực tế */}
+      {/* Nút Xuất JSON */}
       <Button size="sm" variant="outline" onClick={handleExportData} className="gap-2 h-8 text-xs">
         <Download className="h-4 w-4" /> Xuất dữ liệu
       </Button>
@@ -112,7 +112,7 @@ export function FinanceToolbarActions({ stats, settings }: Props) {
               <h4 className="font-bold text-slate-800 text-xs">1. Số tài khoản các cổng nhận tiền</h4>
               <div className="grid grid-cols-1 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-[10px]">STK VietQR MB Bank (Cổng PayOS)</Label>
+                  <Label className="text-[10px]">STK VietQR ACB Bank (Tôn Thất Trọng)</Label>
                   <Input
                     className="h-8 text-xs font-mono font-bold"
                     value={payosAcc}

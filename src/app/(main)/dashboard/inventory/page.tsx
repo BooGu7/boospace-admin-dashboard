@@ -1,15 +1,16 @@
-import { getMaterialsAction } from "@/actions/product.actions";
+import { getElectricityRateAction, getMaterialsAction } from "@/actions/product.actions";
 import { getCategories } from "@/lib/repositories/category.repository";
 import { getProducts } from "@/lib/repositories/product.repository";
 import { InventoryGrid } from "./_components/inventory-grid";
 
-export const revalidate = 0;
+export const revalidate = 0; // Khử cache tĩnh Next.js theo đúng Quy tắc số 5
 
 export default async function InventoryPage() {
-  const [products, categories, dbMaterials] = await Promise.all([
+  const [products, categories, dbMaterials, dbElectricityRate] = await Promise.all([
     getProducts(),
     getCategories(),
     getMaterialsAction(), // Tải cuộn nhựa lưu trên Supabase
+    getElectricityRateAction(), // Tải định mức giá điện lưu trên Supabase
   ]);
 
   return (
@@ -23,7 +24,12 @@ export default async function InventoryPage() {
         </div>
       </div>
 
-      <InventoryGrid initialProducts={products} categories={categories} initialMaterials={dbMaterials} />
+      <InventoryGrid
+        initialProducts={products}
+        categories={categories}
+        initialMaterials={dbMaterials}
+        initialElectricityRate={dbElectricityRate}
+      />
     </div>
   );
 }
